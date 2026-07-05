@@ -218,7 +218,7 @@ function ProjectTasksPage() {
 
       {/* Kanban Board */}
       <div className="mx-auto max-w-[1200px] px-6 pb-8" style={{ height: "calc(100vh - 180px)" }}>
-        <ScrollArea style={{ width: "100%", height: "100%" }}>
+        <ScrollArea style={{ width: "100%", height: "100%" }} options={{ scrollbars: { autoHide: "never" } }}>
           <div className="flex gap-4 min-w-max h-full">
           {stages.length === 0 && tasks.length === 0 ? (
             <div className="w-full rounded-[12px] border border-border bg-card p-12 text-center">
@@ -276,7 +276,7 @@ function ProjectTasksPage() {
                           key={task.id}
                           to="/projects/$projectId/tasks/$taskId"
                           params={{ projectId, taskId: String(task.id) }}
-                          className="rounded-[8px] border border-border bg-card shadow-[0px_1px_1px_#00000003,0px_2px_4px_-2px_#00000005] hover:border-border-hover transition-colors cursor-pointer no-underline block"
+                          className="rounded-[8px] border border-border bg-card shadow-[0px_1px_1px_#00000003,0px_2px_4px_-2px_#00000005] hover:border-border-hover transition-colors cursor-pointer no-underline block mb-3"
                         >
                           {/* Color bar */}
                           <div className="h-1 rounded-t-[8px]" style={{ backgroundColor: taskColor }} />

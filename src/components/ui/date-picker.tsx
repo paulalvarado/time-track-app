@@ -11,8 +11,13 @@ const WEEKDAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
 
 function toDate(iso: string): Date {
   if (!iso) return new Date();
-  const d = new Date(iso + "T00:00:00");
-  return isNaN(d.getTime()) ? new Date() : d;
+  const parts = iso.split("-");
+  if (parts.length === 3) {
+    const y = parseInt(parts[0]), m = parseInt(parts[1]) - 1, d = parseInt(parts[2]);
+    if (!isNaN(y) && !isNaN(m) && !isNaN(d)) return new Date(y, m, d);
+  }
+  const fallback = new Date(iso + "T12:00:00");
+  return isNaN(fallback.getTime()) ? new Date() : fallback;
 }
 
 function toISO(d: Date): string {

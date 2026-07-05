@@ -47,6 +47,13 @@ function SettingsPage() {
   const [checking, setChecking] = useState(true);
   const [hasConfig, setHasConfig] = useState(false);
 
+  // ─── Gemini state ───
+  const [geminiKey, setGeminiKey] = useState("");
+  const [hasGeminiKey, setHasGeminiKey] = useState(false);
+  const [geminiError, setGeminiError] = useState("");
+  const [geminiSuccess, setGeminiSuccess] = useState("");
+  const [geminiLoading, setGeminiLoading] = useState(false);
+
   const confirmLogout = useDialog();
 
   useEffect(() => {
@@ -70,6 +77,7 @@ function SettingsPage() {
             setDbName(data.config.dbName || "");
             setOdooUsername(data.config.username || "");
             setHasConfig(true);
+            setHasGeminiKey(!!data.config.hasGeminiKey);
           }
         }
         setChecking(false);
@@ -159,6 +167,33 @@ function SettingsPage() {
       setOdooError("Connection error. Please try again.");
     } finally {
       setOdooLoading(false);
+    }
+  };
+
+  // ─── Gemini submit ───
+  const handleGeminiSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setGeminiError("");
+    setGeminiSuccess("");
+    setGeminiLoading(true);
+    try {
+      const res = await fetch("/api/odoo/gemini-key", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ geminiApiKey: geminiKey }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setGeminiError(data.error || "Failed to save key");
+        return;
+      }
+      setHasGeminiKey(data.hasGeminiKey);
+      setGeminiSuccess("Gemini API key saved successfully.");
+      setTimeout(() => setGeminiSuccess(""), 3000);
+    } catch {
+      setGeminiError("Connection error. Please try again.");
+    } finally {
+      setGeminiLoading(false);
     }
   };
 
@@ -408,6 +443,59 @@ function SettingsPage() {
                 <Button type="submit" size="md" disabled={odooLoading}>
                   {odooLoading ? "Saving..." : hasConfig ? "Update Odoo" : "Connect Odoo"}
                 </Button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        {/* ─── Section: Gemini AI ─── */}
+        <section>
+          <hr className="border-border" />
+          <div className="mt-8 max-w-md">
+            <h2 className="text-[16px] font-semibold leading-[24px] text-text-primary mb-1">Gemini AI</h2>
+            <p className="text-[14px] leading-[20px] text-text-secondary mb-4">
+              Configure your Gemini API key for voice-to-timesheet transcription.
+              Get a free key at{" "}
+              <a href="https://ai.google.dev/" target="_blank" rel="noopener noreferrer"
+                className="text-accent hover:underline">ai.google.dev</a>.
+            </p>
+
+            <form className="space-y-4" onSubmit={handleGeminiSubmit}>
+              <div>
+                <Label>Gemini API Key</Label>
+                <Input
+                  type="password"
+                  placeholder="Enter your Gemini API key"
+                  value={geminiKey}
+                  onChange={(e) => setGeminiKey(e.target.value)}
+                  wrapperClassName="max-w-full"
+                />
+              </div>
+
+              {geminiError && (
+                <div className="rounded-[6px] bg-danger-bg border border-danger/20 px-3 py-2 text-[13px] leading-[18px] text-danger-text">
+                  {geminiError}
+                </div>
+              )}
+
+              {geminiSuccess && (
+                <div className="rounded-[6px] bg-success-bg border border-success/20 px-3 py-2 text-[13px] leading-[18px] text-success-text flex items-center gap-2">
+                  <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                  </svg>
+                  {geminiSuccess}
+                </div>
+              )}
+
+              <div className="flex items-center gap-2 pt-2">
+                <Button type="submit" size="md" disabled={geminiLoading}>
+                  {geminiLoading ? "Saving..." : hasGeminiKey ? "Update Key" : "Save Key"}
+                </Button>
+                {hasGeminiKey && (
+                  <span className="rounded-[4px] bg-success-bg px-2 py-0.5 text-[11px] font-medium leading-[16px] text-success-text">
+                    Configured
+                  </span>
+                )}
               </div>
             </form>
           </div>

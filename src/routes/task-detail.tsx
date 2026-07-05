@@ -1,7 +1,7 @@
 import { createRoute, useNavigate, Link, useLocation } from "@tanstack/react-router";
 import { Route as rootRoute } from "./__root";
-import { useState, useEffect } from "react";
-import { Button, Dropdown, DropdownItem, DropdownDivider, Dialog, DialogHeader, DialogBody, DialogFooter, useDialog, Input, Label, DatePicker, NumberInput, SelectMenu } from "../components/ui";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Button, Dropdown, DropdownItem, DropdownDivider, Dialog, DialogHeader, DialogBody, DialogFooter, useDialog, Input, Label, DatePicker, NumberInput, SelectMenu, Textarea, Tooltip } from "../components/ui";
 import { useCatalog, type CatalogItem } from "../lib/use-catalog";
 import { useDarkMode } from "../lib/use-dark-mode";
 
@@ -62,8 +62,29 @@ function TaskDetailPage() {
   const [saving, setSaving] = useState(false);
   const [editError, setEditError] = useState("");
   const [editSuccess, setEditSuccess] = useState("");
+
+  // AI Recording states
+  const [showAiDialog, setShowAiDialog] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [audioBase64, setAudioBase64] = useState<string | null>(null);
+  const [audioMimeType, setAudioMimeType] = useState("audio/webm");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const [suggestions, setSuggestions] = useState<{ date: string; concept: string; hours: number }[]>([]);
+  const [savingBatch, setSavingBatch] = useState(false);
+  const [batchResult, setBatchResult] = useState<string | null>(null);
+  const [aiDialogTab, setAiDialogTab] = useState<"voice" | "manual">("voice");
+  const [selectedForDelete, setSelectedForDelete] = useState<Set<number>>(new Set());
+  const [manualConcept, setManualConcept] = useState("");
+  const [manualHours, setManualHours] = useState("");
+  const [manualDate, setManualDate] = useState(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; });
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { items: priorityItems } = useCatalog("priority");
-  const { items: userItems } = useCatalog("users");
+  const { items: userItems } = useCatalog("employees");
   const { isDark, toggle: toggleDark } = useDarkMode();
 
   const getPriorityLabel = (key: string): string => {
@@ -113,6 +134,193 @@ function TaskDetailPage() {
   }, [navigate, projectId, taskId]);
 
   const handleLogout = () => { fetch("/api/auth/logout", { method: "POST" }).catch(() => {}); navigate({ to: "/login" }); };
+
+  // ─── AI Recording ───
+
+  const startRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : "audio/webm";
+      setAudioMimeType(mimeType);
+
+      const recorder = new MediaRecorder(stream, { mimeType });
+      mediaRecorderRef.current = recorder;
+      chunksRef.current = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      recorder.onstop = async () => {
+        // Stop all tracks
+        stream.getTracks().forEach((t) => t.stop());
+
+        if (chunksRef.current.length === 0) return;
+
+        const blob = new Blob(chunksRef.current, { type: mimeType });
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64 = (reader.result as string).split(",")[1];
+          setAudioBase64(base64);
+        };
+        reader.readAsDataURL(blob);
+
+        // Stop the duration timer
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+      };
+
+      recorder.start(250); // Collect data every 250ms
+      setIsRecording(true);
+      setRecordingDuration(0);
+
+      // Start duration timer
+      timerRef.current = setInterval(() => {
+        setRecordingDuration((prev) => prev + 1);
+      }, 1000);
+    } catch {
+      setAiError("Microphone access denied. Please allow microphone permissions.");
+    }
+  }, []);
+
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+    }
+    setIsRecording(false);
+  }, []);
+
+  const handleMicMouseDown = useCallback(() => {
+    pressTimerRef.current = setTimeout(() => {
+      startRecording();
+    }, 200); // 200ms hold to start recording
+  }, [startRecording]);
+
+  const handleMicMouseUpOrLeave = useCallback(() => {
+    if (pressTimerRef.current) {
+      clearTimeout(pressTimerRef.current);
+      pressTimerRef.current = null;
+    }
+    if (isRecording) {
+      stopRecording();
+    }
+  }, [isRecording, stopRecording]);
+
+  // ─── AI Transcribe ───
+
+  const handleTranscribe = async () => {
+    if (!audioBase64) return;
+    setAiLoading(true);
+    setAiError("");
+
+    try {
+      const res = await fetch("/api/ai/transcribe-timesheet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ audio: audioBase64, mimeType: audioMimeType }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setAiError(data.error || "Transcription failed");
+      } else {
+        setSuggestions(data.entries || []);
+      }
+    } catch {
+      setAiError("Connection error. Please try again.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  // Send audio to AI when it becomes available
+  useEffect(() => {
+    if (audioBase64 && !isRecording) {
+      handleTranscribe();
+    }
+  }, [audioBase64, isRecording]);
+
+  // ─── Batch Save ───
+
+  // ─── Suggestion actions ───
+
+  const handleDeleteEntry = (idx: number) => {
+    setSuggestions((prev) => prev.filter((_, i) => i !== idx));
+    setSelectedForDelete((prev) => {
+      const next = new Set(prev);
+      next.delete(idx);
+      // Re-map indices
+      return new Set([...next].map((i) => (i > idx ? i - 1 : i)));
+    });
+  };
+
+  const toggleSelectEntry = (idx: number) => {
+    setSelectedForDelete((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx);
+      else next.add(idx);
+      return next;
+    });
+  };
+
+  const handleDeleteSelected = () => {
+    const indices = [...selectedForDelete].sort((a, b) => b - a); // descending
+    setSuggestions((prev) => prev.filter((_, i) => !selectedForDelete.has(i)));
+    setSelectedForDelete(new Set());
+  };
+
+  const handleAddManualEntry = () => {
+    if (!manualConcept.trim() || !manualHours) return;
+    const hours = parseFloat(manualHours);
+    if (isNaN(hours) || hours <= 0) return;
+    setSuggestions((prev) => [
+      ...prev,
+      { date: manualDate, concept: manualConcept.trim(), hours },
+    ]);
+    setManualConcept("");
+    setManualHours("");
+    const d = new Date(); setManualDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
+  };
+
+  const handleSaveSuggestions = async () => {
+    if (suggestions.length === 0) return;
+    setSavingBatch(true);
+    setBatchResult(null);
+
+    const entries = suggestions.map((s) => ({
+      concept: s.concept,
+      hours: s.hours,
+      date: s.date,
+    }));
+
+    try {
+      const res = await fetch(`/api/projects/${projectId}/tasks/${taskId}/timesheets/batch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entries }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setBatchResult(data.message || "Entries saved.");
+        // Refresh timesheets
+        fetch(`/api/sync/projects/${projectId}/tasks/${taskId}/timesheets`)
+          .then((r) => r.ok ? r.json() : null)
+          .then((d) => { if (d) setTimesheets(d.timesheets || []); })
+          .catch(() => {});
+        // Close dialog after 2s
+        setTimeout(() => { setShowAiDialog(false); setBatchResult(null); setSuggestions([]); }, 2000);
+      } else {
+        setAiError(data.message || "Failed to save entries.");
+      }
+    } catch {
+      setAiError("Connection error. Please try again.");
+    } finally {
+      setSavingBatch(false);
+    }
+  };
 
   const handleEditSave = async () => {
     if (!selectedTs) return;
@@ -299,7 +507,7 @@ function TaskDetailPage() {
 
               {/* Tab: Timesheet */}
               {activeTab === "timesheet" && (
-                <div>
+                <div className="relative">
                   <div className="flex items-center justify-between mb-4">
                     <p className="text-[13px] font-medium leading-[18px] text-text-secondary">
                       {timesheets.length > 0
@@ -320,9 +528,15 @@ function TaskDetailPage() {
                         </thead>
                         <tbody>
                           {timesheets.map((ts: any) => (
-                            <tr key={ts.id} onClick={() => { setSelectedTs(ts); setEditDate(ts.date?.split("T")[0] || ""); setEditName(ts.name || ""); setEditHours(String(ts.hours ?? "")); setEditUserId(String(ts.userId ?? "")); setEditError(""); setEditSuccess(""); editDialog.show(); }} className="border-b border-border last:border-0 hover:bg-page transition-colors cursor-pointer">
+                            <tr key={ts.id} onClick={() => { setSelectedTs(ts); const d = ts.date ? new Date(ts.date) : new Date(); const localDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; setEditDate(localDate); setEditName(ts.name || ""); setEditHours(String(ts.hours ?? "")); setEditUserId(String(ts.userId ?? "")); setEditError(""); setEditSuccess(""); editDialog.show(); }} className="border-b border-border last:border-0 hover:bg-page transition-colors cursor-pointer">
                               <td className="px-3 py-2 text-[13px] leading-[18px] text-text-primary whitespace-nowrap">{ts.date ? new Date(ts.date).toLocaleDateString() : "—"}</td>
-                              <td className="px-3 py-2 text-[13px] leading-[18px] text-text-secondary max-w-[300px] truncate">{ts.name || "—"}</td>
+                              <td className="px-3 py-2 text-[13px] leading-[18px] text-text-secondary max-w-[300px] truncate">
+                                {ts.name ? (
+                                  <Tooltip content={ts.name}>
+                                    <span className="block truncate">{ts.name}</span>
+                                  </Tooltip>
+                                ) : "—"}
+                              </td>
                               <td className="px-3 py-2 text-[13px] leading-[18px] text-text-secondary whitespace-nowrap">{ts.userName || "—"}</td>
                               <td className="px-3 py-2 text-[13px] leading-[18px] text-text-primary text-right font-medium whitespace-nowrap tabular-nums">{ts.hours.toFixed(1)}h</td>
                             </tr>
@@ -337,6 +551,17 @@ function TaskDetailPage() {
                       </table>
                     </div>
                   )}
+
+                  {/* FAB - Floating Action Button */}
+                  <button
+                    onClick={() => { setShowAiDialog(true); setAiError(""); setSuggestions([]); setAudioBase64(null); setBatchResult(null); }}
+                    className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-white shadow-[0px_4px_12px_#0070f34d,0px_1px_2px_#0000001a] hover:bg-accent/90 hover:shadow-[0px_6px_16px_#0070f366] active:scale-95 transition-all duration-200 cursor-pointer"
+                    aria-label="Add timesheet entries"
+                  >
+                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                  </button>
                 </div>
               )}
 
@@ -367,10 +592,10 @@ function TaskDetailPage() {
               </div>
               <div>
                 <Label>Description</Label>
-                <Input type="text"
+                <Textarea
                   defaultValue={selectedTs.name || ""}
                   onChange={(e: any) => setEditName(e.target.value)}
-                  placeholder="Description" wrapperClassName="max-w-full" />
+                  placeholder="Description" wrapperClassName="max-w-full" rows={3} />
               </div>
               <div>
                 <Label>Hours</Label>
@@ -405,6 +630,246 @@ function TaskDetailPage() {
         <DialogFooter>
           <Button variant="secondary" size="md" onClick={() => { setEditError(""); setEditSuccess(""); editDialog.close(); }} disabled={saving}>Cancel</Button>
           <Button size="md" onClick={handleEditSave} disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
+        </DialogFooter>
+      </Dialog>
+
+      {/* AI Recording Dialog */}
+      <Dialog open={showAiDialog} onClose={() => { if (!isRecording && !aiLoading && !savingBatch) { setShowAiDialog(false); setSuggestions([]); setAiError(""); setBatchResult(null); setAudioBase64(null); setAiDialogTab("voice"); setSelectedForDelete(new Set()); } }}>
+        <DialogHeader
+          title="Add timesheet entries"
+          description="Add entries via voice note or manually."
+          onClose={() => { if (!isRecording && !aiLoading && !savingBatch) { setShowAiDialog(false); setSuggestions([]); setAiError(""); setBatchResult(null); setAudioBase64(null); setAiDialogTab("voice"); setSelectedForDelete(new Set()); } }}
+        />
+        <DialogBody>
+          <div className="space-y-5">
+            {/* Tabs */}
+            <div className="flex items-center gap-1 rounded-[8px] bg-surface p-1">
+              <button type="button" onClick={() => setAiDialogTab("voice")}
+                className={`px-3 py-1.5 text-[13px] font-medium leading-[18px] rounded-[6px] transition-all duration-150 cursor-pointer flex items-center gap-1.5 ${
+                  aiDialogTab === "voice"
+                    ? "bg-card text-text-primary shadow-[0px_1px_1px_#00000008,0_0_0_1px_#0000000a_inset]"
+                    : "text-text-muted hover:text-text-secondary"
+                }`}>
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z" />
+                </svg>
+                Voice note
+              </button>
+              <button type="button" onClick={() => setAiDialogTab("manual")}
+                className={`px-3 py-1.5 text-[13px] font-medium leading-[18px] rounded-[6px] transition-all duration-150 cursor-pointer flex items-center gap-1.5 ${
+                  aiDialogTab === "manual"
+                    ? "bg-card text-text-primary shadow-[0px_1px_1px_#00000008,0_0_0_1px_#0000000a_inset]"
+                    : "text-text-muted hover:text-text-secondary"
+                }`}>
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                </svg>
+                Manual entry
+              </button>
+            </div>
+
+            {/* Tab: Voice note */}
+            {aiDialogTab === "voice" && !audioBase64 && !aiLoading && suggestions.length === 0 && (
+              <div className="flex flex-col items-center gap-6 py-4">
+                <button
+                  onMouseDown={handleMicMouseDown}
+                  onMouseUp={handleMicMouseUpOrLeave}
+                  onMouseLeave={handleMicMouseUpOrLeave}
+                  onTouchStart={handleMicMouseDown}
+                  onTouchEnd={handleMicMouseUpOrLeave}
+                  className={`relative flex h-24 w-24 items-center justify-center rounded-full transition-all duration-200 cursor-pointer select-none
+                    ${isRecording
+                      ? "bg-red-500 scale-110"
+                      : "bg-accent hover:bg-accent/90 active:scale-95 shadow-[0px_4px_12px_#0070f34d]"
+                    }`}
+                  aria-label={isRecording ? "Recording... release to stop" : "Hold to record"}
+                >
+                  {isRecording && (
+                    <>
+                      <span className="absolute inset-0 rounded-full border-4 border-red-400/60 animate-ping-slow" />
+                      <span className="absolute inset-2 rounded-full border-2 border-red-300/40 animate-ping-slow" style={{ animationDelay: "0.3s" }} />
+                    </>
+                  )}
+                  <svg className="h-10 w-10 relative z-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z" />
+                  </svg>
+                </button>
+
+                {isRecording && (
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="flex items-end gap-1 h-8">
+                      {[...Array(5)].map((_, i) => (
+                        <div key={i} className="w-1.5 bg-red-400 rounded-full animate-wave" style={{ height: "32px", animationDelay: `${i * 0.15}s`, animationDuration: "0.8s" }} />
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                      <span className="text-[13px] font-medium leading-[18px] text-red-500">
+                        Recording... {Math.floor(recordingDuration / 60)}:{(recordingDuration % 60).toString().padStart(2, "0")}
+                      </span>
+                    </div>
+                    <p className="text-[12px] leading-[16px] text-text-muted">Release to stop</p>
+                  </div>
+                )}
+
+                {!isRecording && (
+                  <p className="text-[13px] leading-[18px] text-text-secondary text-center max-w-xs">
+                    Hold the microphone button and speak clearly about the work you did.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Loading AI */}
+            {aiLoading && (
+              <div className="flex flex-col items-center gap-4 py-6">
+                <div className="relative flex items-center justify-center">
+                  <svg className="h-10 w-10 animate-spin text-accent" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                </div>
+                <p className="text-[14px] font-medium leading-[20px] text-text-primary">Processing your voice note...</p>
+              </div>
+            )}
+
+            {/* Tab: Manual entry */}
+            {aiDialogTab === "manual" && (
+              <div className="space-y-4 pt-2">
+                <div>
+                  <Label>Date</Label>
+                  <DatePicker value={manualDate} onChange={(val) => setManualDate(val)} wrapperClassName="max-w-full" />
+                </div>
+                <div>
+                  <Label>Description</Label>
+                  <Textarea placeholder="What did you work on?" value={manualConcept} onChange={(e: any) => setManualConcept(e.target.value)} wrapperClassName="max-w-full" rows={3} />
+                </div>
+                <div>
+                  <Label>Hours</Label>
+                  <div className="flex gap-2">
+                    <NumberInput value={manualHours} onChange={(val) => setManualHours(val)} step={0.5} min={0} wrapperClassName="flex-1" />
+                    <Button size="md" onClick={handleAddManualEntry} disabled={!manualConcept.trim() || !manualHours}>Add entry</Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Error */}
+            {aiError && (
+              <div className="rounded-[6px] bg-danger-bg border border-danger/20 px-3 py-2 text-[13px] leading-[18px] text-danger-text">{aiError}</div>
+            )}
+
+            {/* Suggestions */}
+            {suggestions.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <p className="text-[14px] font-semibold leading-[20px] text-text-primary">Entries ({suggestions.length})</p>
+                    {selectedForDelete.size > 0 && (
+                      <button onClick={handleDeleteSelected} className="text-[12px] font-medium leading-[16px] text-danger hover:text-danger/80 transition-colors cursor-pointer">
+                        Delete {selectedForDelete.size} selected
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[12px] leading-[16px] text-text-muted">Total: {suggestions.reduce((s, e) => s + e.hours, 0).toFixed(1)}h</p>
+                </div>
+
+                <div className="space-y-2 max-h-[260px] overflow-y-auto">
+                  {suggestions.map((entry, idx) => (
+                    <div key={idx}
+                      className={`rounded-[8px] border p-3 transition-colors ${
+                        selectedForDelete.has(idx) ? "border-danger/40 bg-danger-bg/30" : "border-border bg-card"
+                      }`}>
+                      <div className="flex items-start gap-3">
+                        <div onClick={() => toggleSelectEntry(idx)}
+                          className={`mt-0.5 flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded-[4px] border transition-colors ${
+                            selectedForDelete.has(idx) ? "border-danger bg-danger text-white" : "border-border hover:border-text-muted"
+                          }`}>
+                          {selectedForDelete.has(idx) && (
+                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                            </svg>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[11px] font-semibold leading-[16px] text-text-muted uppercase tracking-[-0.1px]">#{idx + 1}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[16px] font-semibold leading-[22px] text-accent">{entry.hours.toFixed(1)}h</span>
+                              <button onClick={() => handleDeleteEntry(idx)}
+                                className="flex h-6 w-6 items-center justify-center rounded-[4px] text-text-muted hover:text-danger hover:bg-danger-bg/50 transition-colors cursor-pointer"
+                                title="Delete entry">
+                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+                          <p className="text-[13px] font-medium leading-[18px] text-text-primary mt-1 line-clamp-2">{entry.concept}</p>
+                          <div className="flex items-center gap-2 mt-1.5 text-[11px] leading-[16px] text-text-muted">
+                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                            </svg>
+                            {new Date(entry.date + "T12:00:00").toLocaleDateString()}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Batch result */}
+            {batchResult && (
+              <div className="rounded-[6px] bg-success-bg border border-success/20 px-3 py-2 text-[13px] leading-[18px] text-success-text flex items-center gap-2">
+                <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                </svg>
+                {batchResult}
+              </div>
+            )}
+          </div>
+        </DialogBody>
+        <DialogFooter>
+          {suggestions.length > 0 && !batchResult && (
+            <>
+              <button
+                type="button"
+                onClick={() => { setShowAiDialog(false); setSuggestions([]); setAiError(""); setAudioBase64(null); setAiDialogTab("voice"); setSelectedForDelete(new Set()); }}
+                disabled={savingBatch}
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-[6px] border transition-all duration-150 focus:outline-none focus:ring-[3px] focus:ring-text-primary/10 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 h-10 px-4 text-[14px] font-medium leading-[20px] bg-card text-text-primary hover:bg-page border-border"
+              >
+                Discard
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveSuggestions}
+                disabled={savingBatch || suggestions.length === 0}
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-[6px] border transition-all duration-150 focus:outline-none focus:ring-[3px] focus:ring-text-primary/10 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 h-10 px-4 text-[14px] font-medium leading-[20px] border-transparent bg-[#171717] text-white dark:bg-white dark:text-[#171717] hover:bg-[#000000] dark:hover:bg-white/90"
+              >
+                {savingBatch ? "Saving..." : `Save All (${suggestions.reduce((s, e) => s + e.hours, 0).toFixed(1)}h)`}
+              </button>
+            </>
+          )}
+          {!suggestions.length && !aiLoading && !batchResult && (
+            <button
+              type="button"
+              onClick={() => { setShowAiDialog(false); setAiError(""); setAudioBase64(null); setAiDialogTab("voice"); setSelectedForDelete(new Set()); }}
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-[6px] border transition-all duration-150 focus:outline-none focus:ring-[3px] focus:ring-text-primary/10 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 h-10 px-4 text-[14px] font-medium leading-[20px] bg-card text-text-primary hover:bg-page border-border"
+            >
+              Cancel
+            </button>
+          )}
+          {batchResult && (
+            <button
+              type="button"
+              onClick={() => { setShowAiDialog(false); setSuggestions([]); setBatchResult(null); setAudioBase64(null); setAiDialogTab("voice"); setSelectedForDelete(new Set()); }}
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-[6px] border transition-all duration-150 focus:outline-none focus:ring-[3px] focus:ring-text-primary/10 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 h-10 px-4 text-[14px] font-medium leading-[20px] border-transparent bg-[#171717] text-white dark:bg-white dark:text-[#171717] hover:bg-[#000000] dark:hover:bg-white/90"
+            >
+              Done
+            </button>
+          )}
         </DialogFooter>
       </Dialog>
 

@@ -58,6 +58,8 @@ function DashboardPage({ user }: { user: { name: string; email: string } }) {
   const [showWelcome, setShowWelcome] = useState(false);
   const confirmLogout = useDialog();
   const { isDark, toggle: toggleDark } = useDarkMode();
+  const [odooStatus, setOdooStatus] = useState<"loading" | "connected" | "disconnected">("loading");
+  const [totalHours, setTotalHours] = useState<number | null>(null);
 
   useEffect(() => {
     if (sessionStorage.getItem("welcome") === "true") {
@@ -67,15 +69,37 @@ function DashboardPage({ user }: { user: { name: string; email: string } }) {
     }
   }, []);
 
+  useEffect(() => {
+    fetch("/api/odoo/test", { method: "POST" })
+      .then((res) => res.json())
+      .then((data) => {
+        setOdooStatus(data.connected ? "connected" : "disconnected");
+      })
+      .catch(() => {
+        setOdooStatus("disconnected");
+      });
+
+    fetch("/api/sync/hours")
+      .then((res) => res.json())
+      .then((data) => {
+        setTotalHours(data.totalHours ?? 0);
+      })
+      .catch(() => {
+        setTotalHours(0);
+      });
+  }, []);
+
   const handleLogout = () => {
     fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
     navigate({ to: "/login" });
   };
 
+  const odooValue = odooStatus === "loading" ? "..." : odooStatus === "connected" ? "Yes" : "No";
+
   const stats = [
     { label: "Total Projects", value: "0", icon: "M2.25 15a4.5 4.5 0 0 0 4.5 4.5H18a3.75 3.75 0 0 0 1.332-7.257 3 3 0 0 0-3.758-3.848 5.25 5.25 0 0 0-10.233 2.33A4.502 4.502 0 0 0 2.25 15Z" },
-    { label: "Hours Tracked", value: "0h", icon: "M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" },
-    { label: "Odoo Connected", value: "No", icon: "M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" },
+    { label: "Hours Tracked", value: totalHours !== null ? `${Number.isInteger(totalHours) ? totalHours : totalHours.toFixed(1)}h` : "...", icon: "M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" },
+    { label: "Odoo Connected", value: odooValue, icon: "M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" },
   ];
 
   return (
@@ -168,21 +192,39 @@ function DashboardPage({ user }: { user: { name: string; email: string } }) {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {stats.map((s) => (
-            <Card key={s.label} variant="default">
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-[6px] bg-surface">
-                  <svg className="h-4 w-4 text-text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d={s.icon} />
-                  </svg>
+          {stats.map((s) => {
+            const isOdoo = s.label === "Odoo Connected";
+            const isOdooLoading = isOdoo && odooStatus === "loading";
+            const isOdooYes = isOdoo && odooStatus === "connected";
+            return (
+              <Card key={s.label} variant="default">
+                <div className="flex items-center gap-3">
+                  <div className={`flex h-9 w-9 items-center justify-center rounded-[6px] ${isOdooYes ? "bg-success-bg" : "bg-surface"}`}>
+                    {isOdooLoading ? (
+                      <svg className="h-4 w-4 text-text-muted animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                    ) : (
+                      <svg className={`h-4 w-4 ${isOdooYes ? "text-success" : "text-text-primary"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d={s.icon} />
+                      </svg>
+                    )}
+                  </div>
+                  <div>
+                    <p className={`text-[24px] font-semibold leading-[32px] tracking-[-0.96px] ${isOdooYes ? "text-success" : "text-text-primary"}`}>
+                      {isOdooLoading ? (
+                        "Checking..."
+                      ) : (
+                        s.value
+                      )}
+                    </p>
+                    <p className="text-[13px] leading-[18px] text-text-secondary">{s.label}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[24px] font-semibold leading-[32px] tracking-[-0.96px] text-text-primary">{s.value}</p>
-                  <p className="text-[13px] leading-[18px] text-text-secondary">{s.label}</p>
-                </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
 
         {/* Quick Actions */}

@@ -13,19 +13,26 @@ type ScrollAreaProps = {
 export function ScrollArea({ children, className = "", style, options }: ScrollAreaProps) {
   const { isDark } = useDarkMode();
 
+  const baseScrollbars = {
+    theme: isDark ? "os-theme-light" : "os-theme-dark",
+    autoHide: "scroll",
+    autoHideDelay: 600,
+    clickScroll: true,
+  };
+
+  const mergedOptions = {
+    ...options,
+    scrollbars: {
+      ...baseScrollbars,
+      ...(options?.scrollbars || {}),
+    },
+  };
+
   return (
     <OverlayScrollbarsComponent
       className={className}
       style={style}
-      options={{
-        scrollbars: {
-          theme: isDark ? "os-theme-dark" : "os-theme-light",
-          autoHide: "scroll",
-          autoHideDelay: 600,
-          clickScroll: true,
-        },
-        ...options,
-      }}
+      options={mergedOptions}
       defer
     >
       {children}

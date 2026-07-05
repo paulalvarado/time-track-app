@@ -15,6 +15,9 @@
   --color-danger: var(--c-danger);
   --color-danger-bg: var(--c-danger-bg);
   --color-danger-text: var(--c-danger-text);
+  --color-success: var(--c-success);
+  --color-success-bg: var(--c-success-bg);
+  --color-success-text: var(--c-success-text);
   --color-info-bg: var(--c-info-bg);
   --color-info-text: var(--c-info-text);
 }
@@ -32,6 +35,9 @@
   --c-danger: #ee0000;
   --c-danger-bg: #f7d4d6;
   --c-danger-text: #c50000;
+  --c-success: #16a34a;
+  --c-success-bg: #dcfce7;
+  --c-success-text: #15803d;
   --c-info-bg: #d3e5ff;
   --c-info-text: #0050b3;
 }
@@ -49,6 +55,9 @@
   --c-danger: #ef4444;
   --c-danger-bg: #3b1a1a;
   --c-danger-text: #fca5a5;
+  --c-success: #22c55e;
+  --c-success-bg: #1a3a1a;
+  --c-success-text: #86efac;
   --c-info-bg: #1a2a3b;
   --c-info-text: #93c5fd;
 }
@@ -71,4 +80,23 @@
 @keyframes slideOutRight {
   from { opacity: 1; transform: translateX(0); }
   to { opacity: 0; transform: translateX(100%); }
+}
+
+/* Recording animations */
+@keyframes ping-slow {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.4); opacity: 0; }
+}
+
+@keyframes wave {
+  0%, 100% { transform: scaleY(0.3); }
+  50% { transform: scaleY(1); }
+}
+
+.animate-ping-slow {
+  animation: ping-slow 2s ease-out infinite;
+}
+
+.animate-wave {
+  animation: wave 0.8s ease-in-out infinite;
 }
