@@ -8,20 +8,23 @@ import "./index.css";
 // En producción, env.js (generado por docker-entrypoint.sh) define
 // window.__VITE_API_URL__ con la URL de la API. Interceptamos fetch
 // para anteponer esa URL a todas las peticiones /api/*
-const apiBase =
-  typeof window !== "undefined"
-    ? (window as any).__VITE_API_URL__ ?? ""
-    : "";
-
-if (apiBase) {
+(function () {
   const originalFetch = window.fetch.bind(window);
   window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
     if (typeof input === "string" && input.startsWith("/api/")) {
-      return originalFetch(`${apiBase}${input}`, init);
+      const apiBase =
+        typeof window !== "undefined"
+          ? (window as any).__VITE_API_URL__ ?? ""
+          : "";
+      if (apiBase) {
+        const url = `${apiBase}${input}`;
+        console.debug("[API] Fetching:", url);
+        return originalFetch(url, init);
+      }
     }
     return originalFetch(input, init);
   };
-}
+})();
 // ────────────────────────────────────────────────────────────────────────
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
