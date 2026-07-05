@@ -5,9 +5,8 @@ import { router } from "./router";
 import "./index.css";
 
 // ── Interceptor global de fetch ────────────────────────────────────────
-// En producción, env.js (generado por docker-entrypoint.sh) define
-// window.__VITE_API_URL__ con la URL de la API. Interceptamos fetch
-// para anteponer esa URL a todas las peticiones /api/*
+// En producción se antepone la URL de la API a /api/* y se envían
+// credenciales (cookies) para autenticación cross-origin.
 (function () {
   const originalFetch = window.fetch.bind(window);
   window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
@@ -19,7 +18,7 @@ import "./index.css";
       if (apiBase) {
         const url = `${apiBase}${input}`;
         console.debug("[API] Fetching:", url);
-        return originalFetch(url, init);
+        return originalFetch(url, { ...init, credentials: "include" });
       }
     }
     return originalFetch(input, init);
