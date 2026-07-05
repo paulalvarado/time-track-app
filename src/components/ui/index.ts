@@ -13,3 +13,4 @@ export { Dropdown, DropdownItem, DropdownDivider, DropdownHeader } from "./dropd
 export { MultiSelect } from "./multi-select";
 export { Dialog, DialogHeader, DialogBody, DialogFooter, useDialog } from "./dialog";
 export { Label } from "./label";
+export { Tooltip } from "./tooltip";
