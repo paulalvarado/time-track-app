@@ -29,23 +29,15 @@ RUN pnpm build
 # ── Stage 3: Production (Nginx) ────────────────────────────────────────
 FROM nginx:alpine AS production
 
-# Instalar envsubst para sustituir variables en runtime
-RUN apk add --no-cache gettext
-
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Configuración template con placeholder ${API_URL}
-# Dokploy inyecta API_URL como variable de entorno
-COPY nginx.conf.template /etc/nginx/conf.d/default.conf.template
+# Configuración con SPA fallback
+COPY nginx.conf.template /etc/nginx/conf.d/default.conf
 
-# Entrypoint: sustituye variables de entorno en la config y arranca Nginx
+# Entrypoint: genera env.js con la URL de la API y arranca Nginx
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
 EXPOSE 80
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
-
-EXPOSE 80
-
-CMD ["nginx", "-g", "daemon off;"]
