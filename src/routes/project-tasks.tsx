@@ -1,7 +1,7 @@
 import { createRoute, useNavigate, Link } from "@tanstack/react-router";
 import { Route as rootRoute } from "./__root";
-import { useState, useEffect } from "react";
-import { Button, Dropdown, DropdownItem, DropdownDivider, Dialog, DialogHeader, DialogBody, DialogFooter, useDialog, ScrollArea } from "../components/ui";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Button, Dropdown, DropdownItem, DropdownDivider, Dialog, DialogHeader, DialogBody, DialogFooter, useDialog, ScrollArea, SelectMenu, Label, Input, Textarea } from "../components/ui";
 import { useCatalog, type CatalogItem } from "../lib/use-catalog";
 import { useDarkMode } from "../lib/use-dark-mode";
 
@@ -64,7 +64,35 @@ function ProjectTasksPage() {
   const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
   const confirmLogout = useDialog();
   const { items: priorityItems } = useCatalog("priority");
+  const { items: userItems } = useCatalog("users");
   const { isDark, toggle: toggleDark } = useDarkMode();
+
+  // Add task dialog states
+  const [showAddTaskDialog, setShowAddTaskDialog] = useState(false);
+  const [addTaskTab, setAddTaskTab] = useState<"voice" | "manual">("voice");
+  const [taskName, setTaskName] = useState("");
+  const [taskDescription, setTaskDescription] = useState("");
+  const [taskStageId, setTaskStageId] = useState(() => localStorage.getItem("lastTaskStageId") || "");
+  const [taskColor, setTaskColor] = useState(() => localStorage.getItem("lastTaskColor") || "");
+  const [taskOwnerId, setTaskOwnerId] = useState(() => localStorage.getItem("lastTaskOwnerId") || "");
+  const [taskSaving, setTaskSaving] = useState(false);
+  const [taskAiError, setTaskAiError] = useState("");
+  const [taskAiLoading, setTaskAiLoading] = useState(false);
+  const [taskSuggestions, setTaskSuggestions] = useState<{ name: string; description: string; stageId: number | null }[]>([]);
+  const [taskSaved, setTaskSaved] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [audioBase64, setAudioBase64] = useState<string | null>(null);
+  const [audioMimeType, setAudioMimeType] = useState("audio/webm");
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Persist task dialog selections
+  useEffect(() => { if (taskStageId) localStorage.setItem("lastTaskStageId", taskStageId); }, [taskStageId]);
+  useEffect(() => { if (taskColor) localStorage.setItem("lastTaskColor", taskColor); }, [taskColor]);
+  useEffect(() => { if (taskOwnerId) localStorage.setItem("lastTaskOwnerId", taskOwnerId); }, [taskOwnerId]);
 
   const getPriorityLabel = (key: string): string => {
     const found = priorityItems.find((i: CatalogItem) => i.key === key);
@@ -77,30 +105,32 @@ function ProjectTasksPage() {
     if (match) setProjectId(match[1]);
   }, []);
 
+  // Refresh tasks from local DB
+  const refreshTasks = useCallback(() => {
+    if (!projectId) return;
+    fetch(`/api/sync/projects/${projectId}/tasks`)
+      .then((res) => res.ok ? res.json() : null)
+      .then((tasksData) => {
+        if (tasksData) {
+          setProjectName(tasksData.projectName || `Project #${projectId}`);
+          setTasks(tasksData.tasks || []);
+          setStages(tasksData.stages || []);
+          setLastSyncAt(tasksData.lastSyncAt || null);
+        }
+      })
+      .catch(() => {});
+  }, [projectId]);
+
   useEffect(() => {
     if (!projectId) return;
 
     const fetchData = () => {
-      Promise.all([
-        fetch("/api/auth/me"),
-        fetch(`/api/sync/projects/${projectId}/tasks`),
-      ])
-        .then(async ([userRes, tasksRes]) => {
+      fetch("/api/auth/me")
+        .then(async (userRes) => {
           if (!userRes.ok) throw new Error("Unauthorized");
           const userData = await userRes.json();
           setUser(userData.user);
-
-          if (tasksRes.ok) {
-            const tasksData = await tasksRes.json();
-            setProjectName(tasksData.projectName || `Project #${projectId}`);
-            setTasks(tasksData.tasks || []);
-            setStages(tasksData.stages || []);
-            setLastSyncAt(tasksData.lastSyncAt || null);
-          } else {
-            const errData = await tasksRes.json().catch(() => ({}));
-            setFetchError(errData.error || "Could not load tasks");
-            setProjectName(`Project #${projectId}`);
-          }
+          refreshTasks();
         })
         .catch((err) => {
           if (err.message === "Unauthorized") {
@@ -115,9 +145,172 @@ function ProjectTasksPage() {
     fetchData();
     const interval = setInterval(fetchData, 10_000);
     return () => clearInterval(interval);
-  }, [navigate, projectId]);
+  }, [navigate, projectId, refreshTasks]);
 
   const handleLogout = () => { fetch("/api/auth/logout", { method: "POST" }).catch(() => {}); navigate({ to: "/login" }); };
+
+  // ─── Task recording ───
+
+  const startRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : "audio/webm";
+      setAudioMimeType(mimeType);
+
+      const recorder = new MediaRecorder(stream, { mimeType });
+      mediaRecorderRef.current = recorder;
+      chunksRef.current = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        if (chunksRef.current.length === 0) return;
+        const blob = new Blob(chunksRef.current, { type: mimeType });
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64 = (reader.result as string).split(",")[1];
+          setAudioBase64(base64);
+        };
+        reader.readAsDataURL(blob);
+        if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+      };
+
+      recorder.start(250);
+      setIsRecording(true);
+      setRecordingDuration(0);
+      timerRef.current = setInterval(() => setRecordingDuration((prev) => prev + 1), 1000);
+    } catch {
+      setTaskAiError("Microphone access denied. Please allow microphone permissions.");
+    }
+  }, []);
+
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+    }
+    setIsRecording(false);
+  }, []);
+
+  const handleMicMouseDown = useCallback(() => {
+    pressTimerRef.current = setTimeout(() => startRecording(), 200);
+  }, [startRecording]);
+
+  const handleMicMouseUpOrLeave = useCallback(() => {
+    if (pressTimerRef.current) { clearTimeout(pressTimerRef.current); pressTimerRef.current = null; }
+    if (isRecording) stopRecording();
+  }, [isRecording, stopRecording]);
+
+  // ─── Task AI transcribe ───
+
+  const handleTaskTranscribe = async () => {
+    if (!audioBase64) return;
+    setTaskAiLoading(true);
+    setTaskAiError("");
+
+    const stageOptions = stages.map((s) => ({ id: s.id, name: s.name }));
+
+    try {
+      const res = await fetch("/api/ai/transcribe-task", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ audio: audioBase64, mimeType: audioMimeType, stageOptions }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setTaskAiError(data.error || "Transcription failed");
+      } else {
+        setTaskSuggestions(data.tasks || []);
+      }
+    } catch {
+      setTaskAiError("Connection error. Please try again.");
+    } finally {
+      setTaskAiLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (audioBase64 && !isRecording) handleTaskTranscribe();
+  }, [audioBase64, isRecording]);
+
+  // ─── Task save ───
+
+  const handleTaskSave = async (task: { name: string; description?: string; stageId?: number | null }) => {
+    setTaskSaving(true);
+    setTaskAiError("");
+
+    try {
+      const res = await fetch(`/api/sync/projects/${projectId}/tasks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: task.name,
+          description: task.description || "",
+          stageId: task.stageId || (taskStageId ? parseInt(taskStageId) : null),
+          ownerId: taskOwnerId ? parseInt(taskOwnerId) : null,
+          color: taskColor ? parseInt(taskColor) : null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to create task");
+      }
+      refreshTasks();
+      return data;
+    } catch (e: any) {
+      setTaskAiError(e.message || "Failed to save task");
+      throw e;
+    } finally {
+      setTaskSaving(false);
+    }
+  };
+
+  const handleSaveAllSuggestions = async () => {
+    setTaskAiError("");
+    let savedCount = 0;
+    for (const task of taskSuggestions) {
+      try {
+        await handleTaskSave(task);
+        savedCount++;
+      } catch {
+        break;
+      }
+    }
+    if (savedCount > 0) {
+      setTaskSaved(`Task${savedCount > 1 ? 's' : ''} created successfully!`);
+      setTimeout(() => {
+        setShowAddTaskDialog(false);
+        setTaskSaved(null);
+        setTaskSuggestions([]);
+        setAudioBase64(null);
+        setTaskName("");
+        setTaskDescription("");
+      }, 2000);
+    }
+  };
+
+  const handleAddManualTask = async () => {
+    if (!taskName.trim()) return;
+    try {
+      await handleTaskSave({
+        name: taskName.trim(),
+        description: taskDescription.trim(),
+      });
+      setTaskSaved("Task created successfully!");
+      setTimeout(() => {
+        setShowAddTaskDialog(false);
+        setTaskSaved(null);
+        setTaskSuggestions([]);
+        setAudioBase64(null);
+        setTaskName("");
+        setTaskDescription("");
+      }, 2000);
+    } catch {}
+  };
 
   // Collapsed stages state (persisted in localStorage)
   const [collapsedStages, setCollapsedStages] = useState<Set<number>>(new Set());
@@ -206,11 +399,11 @@ function ProjectTasksPage() {
       </header>
 
       {/* Breadcrumb */}
-      <div className="mx-auto max-w-[1200px] px-6 py-4">
+      <div className="mx-auto max-w-[1200px] px-6 py-4 min-w-0">
         <Link to="/projects" className="text-[13px] leading-[18px] text-text-muted hover:text-text-primary no-underline">
           ← Projects
         </Link>
-        <h1 className="text-[24px] font-semibold leading-[32px] tracking-[-0.96px] text-text-primary mt-1">
+        <h1 className="text-[20px] sm:text-[24px] font-semibold leading-[28px] sm:leading-[32px] tracking-[-0.8px] sm:tracking-[-0.96px] text-text-primary mt-1 truncate">
           {projectName}
         </h1>
         <p className="mt-0.5 text-[14px] leading-[20px] text-text-secondary">{tasks.length} task{tasks.length === 1 ? "" : "s"}</p>
@@ -312,6 +505,227 @@ function ProjectTasksPage() {
         </div>
         </ScrollArea>
       </div>
+
+      {/* FAB - Add Task */}
+      <button
+        onClick={() => {
+          setShowAddTaskDialog(true);
+          setTaskAiError("");
+          setTaskSuggestions([]);
+          setAudioBase64(null);
+          setTaskSaved(null);
+          setAddTaskTab("voice");
+        }}
+        className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-white shadow-[0px_4px_12px_#0070f34d,0px_1px_2px_#0000001a] hover:bg-accent/90 hover:shadow-[0px_6px_16px_#0070f366] active:scale-95 transition-all duration-200 cursor-pointer"
+        aria-label="Add task"
+      >
+        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
+      </button>
+
+      {/* Add Task Dialog */}
+      <Dialog open={showAddTaskDialog} onClose={() => { if (!isRecording && !taskAiLoading && !taskSaving) { setShowAddTaskDialog(false); setTaskSuggestions([]); setTaskAiError(""); setTaskSaved(null); setAudioBase64(null); setAddTaskTab("voice"); setTaskName(""); setTaskDescription(""); } }}>
+        <DialogHeader
+          title="Add task"
+          description="Create a new task via voice note or manually."
+          onClose={() => { if (!isRecording && !taskAiLoading && !taskSaving) { setShowAddTaskDialog(false); setTaskSuggestions([]); setTaskAiError(""); setTaskSaved(null); setAudioBase64(null); setAddTaskTab("voice"); setTaskName(""); setTaskDescription(""); } }}
+        />
+        <DialogBody>
+          <div className="space-y-5">
+            {/* Stage selector */}
+            <div>
+              <Label>Stage</Label>
+              <SelectMenu
+                options={stages.map((s) => ({ value: String(s.id), label: s.name }))}
+                value={taskStageId}
+                onChange={(val) => setTaskStageId(val)}
+                placeholder="Select stage..."
+                wrapperClassName="max-w-full" />
+            </div>
+
+            {/* Color selector */}
+            <div>
+              <Label>Color</Label>
+              <div className="flex gap-1.5 flex-wrap">
+                {Object.entries(ODOO_COLORS).map(([key, color]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setTaskColor(key)}
+                    className={`h-7 w-7 rounded-[6px] border transition-all duration-150 cursor-pointer ${
+                      taskColor === key ? "ring-2 ring-text-primary scale-110" : "ring-0"
+                    }`}
+                    style={{ backgroundColor: color }}
+                    title={`Color ${key}`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Owner selector */}
+            <div>
+              <Label>Owner</Label>
+              <SelectMenu
+                options={userItems.map((u: CatalogItem) => ({ value: u.key, label: u.value }))}
+                value={taskOwnerId}
+                onChange={(val) => setTaskOwnerId(val)}
+                placeholder="Select owner..."
+                wrapperClassName="max-w-full" />
+            </div>
+
+            {/* Tabs */}
+            <div className="flex items-center gap-1 rounded-[8px] bg-surface p-1">
+              <button type="button" onClick={() => setAddTaskTab("voice")}
+                className={`px-3 py-1.5 text-[13px] font-medium leading-[18px] rounded-[6px] transition-all duration-150 cursor-pointer flex items-center gap-1.5 ${
+                  addTaskTab === "voice"
+                    ? "bg-card text-text-primary shadow-[0px_1px_1px_#00000008,0_0_0_1px_#0000000a_inset]"
+                    : "text-text-muted hover:text-text-secondary"
+                }`}>
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z" />
+                </svg>
+                Voice note
+              </button>
+              <button type="button" onClick={() => setAddTaskTab("manual")}
+                className={`px-3 py-1.5 text-[13px] font-medium leading-[18px] rounded-[6px] transition-all duration-150 cursor-pointer flex items-center gap-1.5 ${
+                  addTaskTab === "manual"
+                    ? "bg-card text-text-primary shadow-[0px_1px_1px_#00000008,0_0_0_1px_#0000000a_inset]"
+                    : "text-text-muted hover:text-text-secondary"
+                }`}>
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                </svg>
+                Manual entry
+              </button>
+            </div>
+
+            {/* Tab: Voice note */}
+            {addTaskTab === "voice" && !audioBase64 && !taskAiLoading && taskSuggestions.length === 0 && (
+              <div className="flex flex-col items-center gap-6 py-4">
+                <button
+                  onMouseDown={handleMicMouseDown}
+                  onMouseUp={handleMicMouseUpOrLeave}
+                  onMouseLeave={handleMicMouseUpOrLeave}
+                  onTouchStart={handleMicMouseDown}
+                  onTouchEnd={handleMicMouseUpOrLeave}
+                  className={`relative flex h-24 w-24 items-center justify-center rounded-full transition-all duration-200 cursor-pointer select-none
+                    ${isRecording ? "bg-red-500 scale-110" : "bg-accent hover:bg-accent/90 active:scale-95 shadow-[0px_4px_12px_#0070f34d]"}`}
+                  aria-label={isRecording ? "Recording... release to stop" : "Hold to record"}
+                >
+                  {isRecording && (
+                    <>
+                      <span className="absolute inset-0 rounded-full border-4 border-red-400/60 animate-ping-slow" />
+                      <span className="absolute inset-2 rounded-full border-2 border-red-300/40 animate-ping-slow" style={{ animationDelay: "0.3s" }} />
+                    </>
+                  )}
+                  <svg className="h-10 w-10 relative z-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z" />
+                  </svg>
+                </button>
+                {isRecording && (
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="flex items-end gap-1 h-8">
+                      {[...Array(5)].map((_, i) => (
+                        <div key={i} className="w-1.5 bg-red-400 rounded-full animate-wave" style={{ height: "32px", animationDelay: `${i * 0.15}s`, animationDuration: "0.8s" }} />
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                      <span className="text-[13px] font-medium leading-[18px] text-red-500">Recording... {Math.floor(recordingDuration / 60)}:{(recordingDuration % 60).toString().padStart(2, "0")}</span>
+                    </div>
+                    <p className="text-[12px] leading-[16px] text-text-muted">Release to stop</p>
+                  </div>
+                )}
+                {!isRecording && (
+                  <p className="text-[13px] leading-[18px] text-text-secondary text-center max-w-xs">Hold the microphone button and describe the task you want to create.</p>
+                )}
+              </div>
+            )}
+
+            {/* Loading AI */}
+            {taskAiLoading && (
+              <div className="flex flex-col items-center gap-4 py-6">
+                <svg className="h-10 w-10 animate-spin text-accent" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                <p className="text-[14px] font-medium leading-[20px] text-text-primary">Processing your voice note...</p>
+              </div>
+            )}
+
+            {/* Tab: Manual entry */}
+            {addTaskTab === "manual" && (
+              <div className="space-y-4 pt-2">
+                <div>
+                  <Label>Task name</Label>
+                  <Input value={taskName} onChange={(e: any) => setTaskName(e.target.value)} placeholder="What needs to be done?" wrapperClassName="max-w-full" />
+                </div>
+                <div>
+                  <Label>Description</Label>
+                  <Textarea value={taskDescription} onChange={(e: any) => setTaskDescription(e.target.value)} placeholder="Details about the task (optional)" wrapperClassName="max-w-full" rows={3} />
+                </div>
+              </div>
+            )}
+
+            {/* Error */}
+            {taskAiError && (
+              <div className="rounded-[6px] bg-danger-bg border border-danger/20 px-3 py-2 text-[13px] leading-[18px] text-danger-text">{taskAiError}</div>
+            )}
+
+            {/* Suggestions */}
+            {taskSuggestions.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-[14px] font-semibold leading-[20px] text-text-primary">Tasks ({taskSuggestions.length})</p>
+                </div>
+                <div className="space-y-2 max-h-[260px] overflow-y-auto">
+                  {taskSuggestions.map((task, idx) => (
+                    <div key={idx} className="rounded-[8px] border border-border bg-card p-3">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[11px] font-semibold leading-[16px] text-text-muted uppercase tracking-[-0.1px]">#{idx + 1}</span>
+                          </div>
+                          <p className="text-[13px] font-medium leading-[18px] text-text-primary mt-1 line-clamp-2">{task.name}</p>
+                          {task.description && (
+                            <p className="text-[12px] leading-[16px] text-text-muted mt-1 line-clamp-2">{task.description}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Task saved */}
+            {taskSaved && (
+              <div className="rounded-[6px] bg-success-bg border border-success/20 px-3 py-2 text-[13px] leading-[18px] text-success-text flex items-center gap-2">
+                <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+                {taskSaved}
+              </div>
+            )}
+          </div>
+        </DialogBody>
+        <DialogFooter>
+          {addTaskTab === "manual" && !taskSuggestions.length && !taskSaved && (
+            <>
+              <Button variant="secondary" size="md" onClick={() => { setShowAddTaskDialog(false); setTaskSuggestions([]); setTaskAiError(""); setAudioBase64(null); setAddTaskTab("voice"); setTaskName(""); setTaskDescription(""); }} disabled={taskSaving}>Cancel</Button>
+              <Button size="md" onClick={handleAddManualTask} disabled={taskSaving || !taskName.trim()}>{taskSaving ? "Saving..." : "Create task"}</Button>
+            </>
+          )}
+          {taskSuggestions.length > 0 && !taskSaved && (
+            <>
+              <Button variant="secondary" size="md" onClick={() => { setShowAddTaskDialog(false); setTaskSuggestions([]); setTaskAiError(""); setAudioBase64(null); setAddTaskTab("voice"); setTaskName(""); setTaskDescription(""); }} disabled={taskSaving}>Cancel</Button>
+              <Button size="md" onClick={handleSaveAllSuggestions} disabled={taskSaving || taskSuggestions.length === 0}>{taskSaving ? "Saving..." : `Create All (${taskSuggestions.length})`}</Button>
+            </>
+          )}
+          {!taskSuggestions.length && !taskAiLoading && !taskSaved && addTaskTab === "voice" && (
+            <Button variant="secondary" size="md" onClick={() => { setShowAddTaskDialog(false); setTaskAiError(""); setAudioBase64(null); setAddTaskTab("voice"); setTaskName(""); setTaskDescription(""); }}>Cancel</Button>
+          )}
+          {taskSaved && (
+            <Button size="md" onClick={() => { setShowAddTaskDialog(false); setTaskSuggestions([]); setTaskSaved(null); setAudioBase64(null); setAddTaskTab("voice"); setTaskName(""); setTaskDescription(""); }}>Done</Button>
+          )}
+        </DialogFooter>
+      </Dialog>
 
       {/* Sign out dialog */}
       <Dialog open={confirmLogout.open} onClose={confirmLogout.close}>

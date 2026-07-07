@@ -113,7 +113,7 @@ export function MultiSelect({
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute left-0 top-full z-10 mt-1.5 w-full rounded-[8px] border border-border bg-card p-1 shadow-[0px_2px_2px_#0000000a,0px_8px_16px_-4px_#0000000a,0_0_0_1px_#00000014_inset] max-h-60 overflow-y-auto">
+        <div className="absolute left-0 top-full z-50 mt-1.5 w-full rounded-[8px] border border-border bg-card p-1 shadow-[0px_2px_2px_#0000000a,0px_8px_16px_-4px_#0000000a,0_0_0_1px_#00000014_inset] max-h-60 overflow-y-auto">
           {filtered.length === 0 ? (
             <div className="px-2.5 py-3 text-[14px] leading-[20px] text-text-muted text-center">
               No options found

@@ -62,7 +62,7 @@ export function SelectMenu({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-10 mt-1.5 w-full rounded-[8px] border border-border bg-card shadow-[0px_2px_2px_#0000000a,0px_8px_16px_-4px_#0000000a,0_0_0_1px_#00000014_inset]">
+        <div className="absolute left-0 top-full z-50 mt-1.5 w-full rounded-[8px] border border-border bg-card shadow-[0px_2px_2px_#0000000a,0px_8px_16px_-4px_#0000000a,0_0_0_1px_#00000014_inset]">
           <ScrollArea style={{ maxHeight: "240px", width: "100%" }}>
             <div className="p-1 space-y-0.5">
               {options.map((opt) => {

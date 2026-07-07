@@ -32,7 +32,7 @@ export function Dropdown({ trigger, children, align = "start", className = "" }:
       </button>
       {open && (
         <div
-          className={`absolute z-10 mt-1.5 w-48 origin-top-${
+          className={`absolute z-50 mt-1.5 w-48 origin-top-${
             align === "end" ? "right" : "left"
           } rounded-[8px] border border-border bg-card p-1 shadow-[0px_2px_2px_#0000000a,0px_8px_16px_-4px_#0000000a,0_0_0_1px_#00000014_inset] ${
             align === "end" ? "right-0" : "left-0"

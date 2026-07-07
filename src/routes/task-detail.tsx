@@ -79,12 +79,13 @@ function TaskDetailPage() {
   const [manualConcept, setManualConcept] = useState("");
   const [manualHours, setManualHours] = useState("");
   const [manualDate, setManualDate] = useState(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; });
+  const [employeeId, setEmployeeId] = useState(() => localStorage.getItem("lastEmployeeId") || "");
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { items: priorityItems } = useCatalog("priority");
-  const { items: userItems } = useCatalog("employees");
+  const { items: userItems, loading: empLoading } = useCatalog("employees");
   const { isDark, toggle: toggleDark } = useDarkMode();
 
   const getPriorityLabel = (key: string): string => {
@@ -134,6 +135,13 @@ function TaskDetailPage() {
   }, [navigate, projectId, taskId]);
 
   const handleLogout = () => { fetch("/api/auth/logout", { method: "POST" }).catch(() => {}); navigate({ to: "/login" }); };
+
+  // Persist last employee selection
+  useEffect(() => {
+    if (employeeId) {
+      localStorage.setItem("lastEmployeeId", employeeId);
+    }
+  }, [employeeId]);
 
   // ─── AI Recording ───
 
@@ -294,6 +302,7 @@ function TaskDetailPage() {
       concept: s.concept,
       hours: s.hours,
       date: s.date,
+      employeeId: employeeId ? parseInt(employeeId) : undefined,
     }));
 
     try {
@@ -414,13 +423,13 @@ function TaskDetailPage() {
       </header>
 
       {/* Breadcrumb */}
-      <div className="mx-auto max-w-[1200px] px-6 py-4">
-        <div className="flex items-center gap-2 text-[13px] leading-[18px] text-text-muted">
-          <Link to="/projects" className="hover:text-text-primary no-underline text-inherit">Projects</Link>
-          <span>/</span>
-          <Link to="/projects/$projectId" params={{ projectId }} className="hover:text-text-primary no-underline text-inherit">{projectName}</Link>
-          <span>/</span>
-          <span className="text-text-secondary">Task: {task?.name ? (task.name.length > 20 ? task.name.substring(0, 20) + "..." : task.name) : `#${taskId}`}</span>
+      <div className="mx-auto max-w-[1200px] px-6 py-4 min-w-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 text-[12px] sm:text-[13px] leading-[18px] text-text-muted overflow-hidden">
+          <Link to="/projects" className="hover:text-text-primary no-underline text-inherit shrink-0">Projects</Link>
+          <span className="shrink-0">/</span>
+          <Link to="/projects/$projectId" params={{ projectId }} className="hover:text-text-primary no-underline text-inherit truncate min-w-0 max-w-[120px] sm:max-w-none">{projectName}</Link>
+          <span className="shrink-0">/</span>
+          <span className="text-text-secondary truncate min-w-0">Task: {task?.name || `#${taskId}`}</span>
         </div>
       </div>
 
@@ -528,8 +537,8 @@ function TaskDetailPage() {
                         </thead>
                         <tbody>
                           {timesheets.map((ts: any) => (
-                            <tr key={ts.id} onClick={() => { setSelectedTs(ts); const d = ts.date ? new Date(ts.date) : new Date(); const localDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; setEditDate(localDate); setEditName(ts.name || ""); setEditHours(String(ts.hours ?? "")); setEditUserId(String(ts.userId ?? "")); setEditError(""); setEditSuccess(""); editDialog.show(); }} className="border-b border-border last:border-0 hover:bg-page transition-colors cursor-pointer">
-                              <td className="px-3 py-2 text-[13px] leading-[18px] text-text-primary whitespace-nowrap">{ts.date ? new Date(ts.date).toLocaleDateString() : "—"}</td>
+                            <tr key={ts.id} onClick={() => { setSelectedTs(ts); const d = ts.date ? new Date(ts.date + "T12:00:00") : new Date(); const localDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; setEditDate(localDate); setEditName(ts.name || ""); setEditHours(String(ts.hours ?? "")); setEditUserId(String(ts.userId ?? "")); setEditError(""); setEditSuccess(""); editDialog.show(); }} className="border-b border-border last:border-0 hover:bg-page transition-colors cursor-pointer">
+                              <td className="px-3 py-2 text-[13px] leading-[18px] text-text-primary whitespace-nowrap">{ts.date ? new Date(ts.date + "T12:00:00").toLocaleDateString() : "—"}</td>
                               <td className="px-3 py-2 text-[13px] leading-[18px] text-text-secondary max-w-[300px] truncate">
                                 {ts.name ? (
                                   <Tooltip content={ts.name}>
@@ -554,7 +563,7 @@ function TaskDetailPage() {
 
                   {/* FAB - Floating Action Button */}
                   <button
-                    onClick={() => { setShowAiDialog(true); setAiError(""); setSuggestions([]); setAudioBase64(null); setBatchResult(null); }}
+                    onClick={() => { setShowAiDialog(true); setAiError(""); setSuggestions([]); setAudioBase64(null); setBatchResult(null); setEmployeeId(prev => prev || localStorage.getItem("lastEmployeeId") || ""); }}
                     className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-white shadow-[0px_4px_12px_#0070f34d,0px_1px_2px_#0000001a] hover:bg-accent/90 hover:shadow-[0px_6px_16px_#0070f366] active:scale-95 transition-all duration-200 cursor-pointer"
                     aria-label="Add timesheet entries"
                   >
@@ -610,7 +619,7 @@ function TaskDetailPage() {
                 <SelectMenu
                   options={userItems.map((u: CatalogItem) => ({ value: u.key, label: u.value }))}
                   value={editUserId}
-                  onChange={(val) => setEditUserId(val)}
+                  onChange={(val) => { setEditUserId(val); if (val) localStorage.setItem("lastEmployeeId", val); }}
                   placeholder="Select user..."
                   wrapperClassName="max-w-full" />
               </div>
@@ -642,6 +651,17 @@ function TaskDetailPage() {
         />
         <DialogBody>
           <div className="space-y-5">
+            {/* Employee selector */}
+            <div>
+              <Label>Employee</Label>
+              <SelectMenu
+                options={userItems.map((u: CatalogItem) => ({ value: u.key, label: u.value }))}
+                value={employeeId}
+                onChange={(val) => setEmployeeId(val)}
+                placeholder={empLoading ? "Loading employees..." : "Select employee..."}
+                wrapperClassName="max-w-full" />
+            </div>
+
             {/* Tabs */}
             <div className="flex items-center gap-1 rounded-[8px] bg-surface p-1">
               <button type="button" onClick={() => setAiDialogTab("voice")}
@@ -840,7 +860,7 @@ function TaskDetailPage() {
                 disabled={savingBatch}
                 className="inline-flex items-center justify-center whitespace-nowrap rounded-[6px] border transition-all duration-150 focus:outline-none focus:ring-[3px] focus:ring-text-primary/10 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 h-10 px-4 text-[14px] font-medium leading-[20px] bg-card text-text-primary hover:bg-page border-border"
               >
-                Discard
+                Cancel
               </button>
               <button
                 type="button"
