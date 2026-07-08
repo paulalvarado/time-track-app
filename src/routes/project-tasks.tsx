@@ -130,7 +130,11 @@ function ProjectTasksPage() {
           if (!userRes.ok) throw new Error("Unauthorized");
           const userData = await userRes.json();
           setUser(userData.user);
-          refreshTasks();
+
+          // Track project: marca como visitado y si es primera vez, trae data de Odoo
+          return fetch(`/api/sync/projects/${projectId}/track`, { method: "POST" }).then(() => {
+            refreshTasks();
+          });
         })
         .catch((err) => {
           if (err.message === "Unauthorized") {

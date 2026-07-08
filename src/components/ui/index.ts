@@ -14,3 +14,4 @@ export { MultiSelect } from "./multi-select";
 export { Dialog, DialogHeader, DialogBody, DialogFooter, useDialog } from "./dialog";
 export { Label } from "./label";
 export { Tooltip } from "./tooltip";
+export { ThemeToggle } from "./theme-toggle";
