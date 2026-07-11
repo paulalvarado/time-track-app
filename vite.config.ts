@@ -12,19 +12,25 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       VitePWA({
         registerType: "autoUpdate",
+        // En desarrollo, NO registrar Service Worker (evita problemas de caché)
+        devOptions: { enabled: false },
         includeAssets: ["icons/*.png"],
         workbox: {
           skipWaiting: true,
           clientsClaim: true,
-          globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
-          globIgnores: ["index.html"], // nunca cachear index.html en SW
+          // Solo precachear assets con hash (JS, CSS, fonts, imágenes). NUNCA HTML.
+          globPatterns: ["**/*.{js,css,ico,png,svg,woff2}"],
+          // Navegación SPA: NetworkFirst, nunca servir HTML del precache
+          navigateFallback: null,
           runtimeCaching: [
             {
-              urlPattern: /\/index\.html$/,
+              // Documentos HTML: siempre red primero, solo 60s de caché como fallback
+              urlPattern: ({ request }) => request.destination === "document",
               handler: "NetworkFirst",
               options: {
                 cacheName: "html-cache",
-                expiration: { maxEntries: 1, maxAgeSeconds: 60 },
+                expiration: { maxEntries: 5, maxAgeSeconds: 60 },
+                networkTimeoutSeconds: 5,
               },
             },
           ],
