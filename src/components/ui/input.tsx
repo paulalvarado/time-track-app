@@ -2,11 +2,22 @@ import React, { forwardRef, useState } from "react";
 
 type InputSize = "sm" | "md" | "lg";
 
+type TrailingIconDef = {
+  icon: React.ReactNode;
+  onClick?: () => void;
+  onMouseDown?: (e: React.MouseEvent) => void;
+  onMouseUp?: (e: React.MouseEvent) => void;
+  onMouseLeave?: (e: React.MouseEvent) => void;
+  label?: string;
+};
+
 type InputProps = {
   size?: InputSize;
   leadingIcon?: React.ReactNode;
   trailingIcon?: React.ReactNode;
   onTrailingClick?: () => void;
+  trailingIcons?: TrailingIconDef[];
+  suffix?: string;
   error?: string;
   helperText?: string;
   wrapperClassName?: string;
@@ -38,6 +49,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       leadingIcon,
       trailingIcon,
       onTrailingClick,
+      trailingIcons,
+      suffix,
       error,
       helperText,
       wrapperClassName = "",
@@ -66,7 +79,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 
     const pad = paddingStyles[size];
     const leftPad = leadingIcon ? pad.leading : pad.left;
-    const rightPad = trailingIcon ? pad.trailing : pad.right;
+    const hasTrailing = !!trailingIcon || (!!trailingIcons && trailingIcons.length > 0);
+    const rightPad = hasTrailing ? pad.trailing : suffix ? pad.trailing : pad.right;
 
     const hasFloatingLabel = !!label && (size === "md" || size === "lg");
 
@@ -153,6 +167,33 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             >
               {trailingIcon}
             </button>
+          )}
+          {trailingIcons && trailingIcons.length > 0 && (
+            <div className="absolute inset-y-0 right-0 z-10 flex items-center gap-0.5 pr-2">
+              {trailingIcons.map((ti, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  disabled={disabled}
+                  tabIndex={-1}
+                  aria-label={ti.label}
+                  onClick={ti.onClick}
+                  onMouseDown={ti.onMouseDown}
+                  onMouseUp={ti.onMouseUp}
+                  onMouseLeave={ti.onMouseLeave}
+                  className={`flex items-center justify-center rounded-[4px] p-1 text-text-muted hover:text-text-primary hover:bg-black/5 dark:hover:bg-white/10 transition-colors ${
+                    disabled ? "cursor-not-allowed" : "cursor-pointer"
+                  }`}
+                >
+                  {ti.icon}
+                </button>
+              ))}
+            </div>
+          )}
+          {suffix && (
+            <span className="absolute inset-y-0 right-0 z-10 flex items-center pr-3 text-text-muted text-[14px] leading-[20px] select-none pointer-events-none">
+              {suffix}
+            </span>
           )}
         </div>
         {error && <p className="mt-1.5 flex items-center gap-1 text-[12px] leading-[16px] text-[#ee0000]">{error}</p>}

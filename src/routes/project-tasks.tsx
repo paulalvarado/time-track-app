@@ -2,6 +2,7 @@ import { createRoute, useNavigate, Link } from "@tanstack/react-router";
 import { Route as rootRoute } from "./__root";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Button, Dropdown, DropdownItem, DropdownDivider, Dialog, DialogHeader, DialogBody, DialogFooter, useDialog, ScrollArea, SelectMenu, Label, Input, Textarea } from "../components/ui";
+import { Breadcrumb } from "../components/breadcrumb";
 import { useCatalog, type CatalogItem } from "../lib/use-catalog";
 import { useDarkMode } from "../lib/use-dark-mode";
 
@@ -189,7 +190,7 @@ function ProjectTasksPage() {
       setRecordingDuration(0);
       timerRef.current = setInterval(() => setRecordingDuration((prev) => prev + 1), 1000);
     } catch {
-      setTaskAiError("Microphone access denied. Please allow microphone permissions.");
+        setTaskAiError("Acceso al micrófono denegado. Por favor permite los permisos del micrófono.");
     }
   }, []);
 
@@ -226,12 +227,12 @@ function ProjectTasksPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setTaskAiError(data.error || "Transcription failed");
+        setTaskAiError(data.error || "Transcripción fallida");
       } else {
         setTaskSuggestions(data.tasks || []);
       }
     } catch {
-      setTaskAiError("Connection error. Please try again.");
+      setTaskAiError("Error de conexión. Intenta de nuevo.");
     } finally {
       setTaskAiLoading(false);
     }
@@ -261,12 +262,12 @@ function ProjectTasksPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || "Failed to create task");
+        throw new Error(data.error || "Error al crear la tarea");
       }
       refreshTasks();
       return data;
     } catch (e: any) {
-      setTaskAiError(e.message || "Failed to save task");
+      setTaskAiError(e.message || "Error al guardar la tarea");
       throw e;
     } finally {
       setTaskSaving(false);
@@ -285,7 +286,7 @@ function ProjectTasksPage() {
       }
     }
     if (savedCount > 0) {
-      setTaskSaved(`Task${savedCount > 1 ? 's' : ''} created successfully!`);
+      setTaskSaved(`¡Tarea${savedCount > 1 ? 's' : ''} creada${savedCount > 1 ? 's' : ''} correctamente!`);
       setTimeout(() => {
         setShowAddTaskDialog(false);
         setTaskSaved(null);
@@ -304,7 +305,7 @@ function ProjectTasksPage() {
         name: taskName.trim(),
         description: taskDescription.trim(),
       });
-      setTaskSaved("Task created successfully!");
+      setTaskSaved("¡Tarea creada correctamente!");
       setTimeout(() => {
         setShowAddTaskDialog(false);
         setTaskSaved(null);
@@ -349,24 +350,14 @@ function ProjectTasksPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-page">
-        <header className="border-b border-border bg-card">
-          <div className="mx-auto max-w-[1200px] px-6 h-16 flex items-center justify-between">
-            <Link to="/projects" className="flex items-center gap-2 no-underline">
-              <LogoSvg />
-              <span className="text-[16px] font-semibold text-text-primary">Time Track</span>
-            </Link>
-            <div className="flex items-center gap-3">
-              <Link to="/settings" className="text-[14px] leading-[20px] text-text-secondary hover:text-text-primary no-underline">Settings</Link>
-            </div>
-          </div>
-        </header>
+
         <div className="mx-auto max-w-[1200px] px-6 py-20 flex items-center justify-center">
           <div className="flex items-center gap-2 text-[14px] text-text-muted">
             <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
-            Loading...
+            Cargando...
           </div>
         </div>
       </main>
@@ -375,42 +366,14 @@ function ProjectTasksPage() {
 
   return (
     <main className="min-h-screen max-h-screen overflow-hidden bg-page">
-      {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="mx-auto max-w-[1200px] px-6 h-16 flex items-center justify-between">
-          <Link to="/projects" className="flex items-center gap-2 no-underline">
-            <LogoSvg />
-            <span className="text-[16px] font-semibold text-text-primary">Time Track</span>
-          </Link>
-          <div className="flex items-center gap-3">
-            <Link to="/settings" className="text-[14px] leading-[20px] text-text-secondary hover:text-text-primary no-underline">Settings</Link>
-            {user && (
-              <Dropdown align="end" trigger={
-                <div className="flex items-center gap-2 cursor-pointer select-none">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-surface text-[11px] font-medium text-text-secondary">{user.name.charAt(0).toUpperCase()}</div>
-                  <span className="text-[13px] leading-[18px] text-text-secondary hidden sm:block">{user.name}</span>
-                </div>
-              }>
-                <DropdownItem icon={<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>} onClick={() => navigate({ to: "/settings" })}>Settings</DropdownItem>
-                <DropdownDivider />
-                <DropdownItem icon={<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d={isDark ? "M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" : "M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z"} /></svg>} onClick={toggleDark}>{isDark ? "Light mode" : "Dark mode"}</DropdownItem>
-                <DropdownDivider />
-                <DropdownItem variant="danger" icon={<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V15m-3 0-3-3m0 0 3-3m-3 3H15" /></svg>} onClick={confirmLogout.show}>Sign out</DropdownItem>
-              </Dropdown>
-            )}
-          </div>
-        </div>
-      </header>
 
-      {/* Breadcrumb */}
+
+      <Breadcrumb items={[{ label: "Proyectos", to: "/projects" }, { label: projectName }]} />
       <div className="mx-auto max-w-[1200px] px-6 py-4 min-w-0">
-        <Link to="/projects" className="text-[13px] leading-[18px] text-text-muted hover:text-text-primary no-underline">
-          ← Projects
-        </Link>
         <h1 className="text-[20px] sm:text-[24px] font-semibold leading-[28px] sm:leading-[32px] tracking-[-0.8px] sm:tracking-[-0.96px] text-text-primary mt-1 truncate">
           {projectName}
         </h1>
-        <p className="mt-0.5 text-[14px] leading-[20px] text-text-secondary">{tasks.length} task{tasks.length === 1 ? "" : "s"}</p>
+        <p className="mt-0.5 text-[14px] leading-[20px] text-text-secondary">{tasks.length} tarea{tasks.length === 1 ? "" : "s"}</p>
       </div>
 
       {/* Kanban Board */}
@@ -426,11 +389,11 @@ function ProjectTasksPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
                     </svg>
                   </div>
-                  <p className="text-[14px] font-medium leading-[20px] text-danger-text">Could not load tasks</p>
+                  <p className="text-[14px] font-medium leading-[20px] text-danger-text">No se pudieron cargar las tareas</p>
                   <p className="mt-1 text-[13px] leading-[18px] text-text-muted">{fetchError}</p>
                 </>
               ) : (
-                <p className="text-[14px] leading-[20px] text-text-muted">No tasks found for this project.</p>
+                <p className="text-[14px] leading-[20px] text-text-muted">No se encontraron tareas para este proyecto.</p>
               )}
             </div>
           ) : (
@@ -446,7 +409,7 @@ function ProjectTasksPage() {
                     <div className="select-none h-full flex items-center justify-center"
                       style={{ writingMode: "vertical-lr", textOrientation: "mixed" }}>
                       <span className="text-[13px] font-semibold leading-[18px] text-text-primary uppercase tracking-[-0.1px] whitespace-nowrap">
-                        {stage?.name || "Uncategorized"} ({stageTasks.length})
+                        {stage?.name || "Sin categoría"} ({stageTasks.length})
                       </span>
                     </div>
                   ) : null}
@@ -455,7 +418,7 @@ function ProjectTasksPage() {
                       <div className="flex items-center justify-between mb-3 px-2.5 py-2 border border-border rounded-[8px] cursor-pointer bg-page" onClick={() => toggleStage(stageId)}>
                         <div className="flex items-center gap-2">
                           <h3 className="text-[13px] font-semibold leading-[18px] text-text-primary uppercase tracking-[-0.1px]">
-                            {stage?.name || "Uncategorized"}
+                            {stage?.name || "Sin categoría"}
                           </h3>
                           <span className="text-[11px] leading-[16px] text-text-muted">{stageTasks.length}</span>
                         </div>
@@ -485,7 +448,7 @@ function ProjectTasksPage() {
                                   <div className="flex h-5 w-5 items-center justify-center rounded-full bg-surface text-[9px] font-medium text-text-secondary">
                                     {task.assignees[0][1]?.charAt(0).toUpperCase() || "?"}
                                   </div>
-                                  <span className="text-[11px] leading-[16px] text-text-muted truncate max-w-[100px]">{task.assignees[0][1] || "Unassigned"}</span>
+                                  <span className="text-[11px] leading-[16px] text-text-muted truncate max-w-[100px]">{task.assignees[0][1] || "Sin asignar"}</span>
                                 </div>
                               )}
                               <span className="text-[10px] leading-[14px] font-medium" style={{ color: priorityColor }}>{priorityLabel}</span>
@@ -521,7 +484,7 @@ function ProjectTasksPage() {
           setAddTaskTab("voice");
         }}
         className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-white shadow-[0px_4px_12px_#0070f34d,0px_1px_2px_#0000001a] hover:bg-accent/90 hover:shadow-[0px_6px_16px_#0070f366] active:scale-95 transition-all duration-200 cursor-pointer"
-        aria-label="Add task"
+        aria-label="Añadir tarea"
       >
         <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -531,20 +494,20 @@ function ProjectTasksPage() {
       {/* Add Task Dialog */}
       <Dialog open={showAddTaskDialog} onClose={() => { if (!isRecording && !taskAiLoading && !taskSaving) { setShowAddTaskDialog(false); setTaskSuggestions([]); setTaskAiError(""); setTaskSaved(null); setAudioBase64(null); setAddTaskTab("voice"); setTaskName(""); setTaskDescription(""); } }}>
         <DialogHeader
-          title="Add task"
-          description="Create a new task via voice note or manually."
+          title="Añadir tarea"
+          description="Crea una nueva tarea por voz o manualmente."
           onClose={() => { if (!isRecording && !taskAiLoading && !taskSaving) { setShowAddTaskDialog(false); setTaskSuggestions([]); setTaskAiError(""); setTaskSaved(null); setAudioBase64(null); setAddTaskTab("voice"); setTaskName(""); setTaskDescription(""); } }}
         />
         <DialogBody>
           <div className="space-y-5">
             {/* Stage selector */}
             <div>
-              <Label>Stage</Label>
+              <Label>Etapa</Label>
               <SelectMenu
                 options={stages.map((s) => ({ value: String(s.id), label: s.name }))}
                 value={taskStageId}
                 onChange={(val) => setTaskStageId(val)}
-                placeholder="Select stage..."
+                placeholder="Seleccionar etapa..."
                 wrapperClassName="max-w-full" />
             </div>
 
@@ -569,12 +532,12 @@ function ProjectTasksPage() {
 
             {/* Owner selector */}
             <div>
-              <Label>Owner</Label>
+              <Label>Asignado</Label>
               <SelectMenu
                 options={userItems.map((u: CatalogItem) => ({ value: u.key, label: u.value }))}
                 value={taskOwnerId}
                 onChange={(val) => setTaskOwnerId(val)}
-                placeholder="Select owner..."
+                placeholder="Seleccionar responsable..."
                 wrapperClassName="max-w-full" />
             </div>
 
@@ -589,7 +552,7 @@ function ProjectTasksPage() {
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z" />
                 </svg>
-                Voice note
+                Nota de voz
               </button>
               <button type="button" onClick={() => setAddTaskTab("manual")}
                 className={`px-3 py-1.5 text-[13px] font-medium leading-[18px] rounded-[6px] transition-all duration-150 cursor-pointer flex items-center gap-1.5 ${
@@ -600,7 +563,7 @@ function ProjectTasksPage() {
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
                 </svg>
-                Manual entry
+                Manual
               </button>
             </div>
 
@@ -615,7 +578,7 @@ function ProjectTasksPage() {
                   onTouchEnd={handleMicMouseUpOrLeave}
                   className={`relative flex h-24 w-24 items-center justify-center rounded-full transition-all duration-200 cursor-pointer select-none
                     ${isRecording ? "bg-red-500 scale-110" : "bg-accent hover:bg-accent/90 active:scale-95 shadow-[0px_4px_12px_#0070f34d]"}`}
-                  aria-label={isRecording ? "Recording... release to stop" : "Hold to record"}
+                  aria-label={isRecording ? "Grabando... suelta para detener" : "Mantén para grabar"}
                 >
                   {isRecording && (
                     <>
@@ -636,13 +599,13 @@ function ProjectTasksPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-                      <span className="text-[13px] font-medium leading-[18px] text-red-500">Recording... {Math.floor(recordingDuration / 60)}:{(recordingDuration % 60).toString().padStart(2, "0")}</span>
+                      <span className="text-[13px] font-medium leading-[18px] text-red-500">Grabando... {Math.floor(recordingDuration / 60)}:{(recordingDuration % 60).toString().padStart(2, "0")}</span>
                     </div>
-                    <p className="text-[12px] leading-[16px] text-text-muted">Release to stop</p>
+                    <p className="text-[12px] leading-[16px] text-text-muted">Suelta para detener</p>
                   </div>
                 )}
                 {!isRecording && (
-                  <p className="text-[13px] leading-[18px] text-text-secondary text-center max-w-xs">Hold the microphone button and describe the task you want to create.</p>
+                  <p className="text-[13px] leading-[18px] text-text-secondary text-center max-w-xs">Mantén presionado el micrófono y describe la tarea que deseas crear.</p>
                 )}
               </div>
             )}
@@ -651,7 +614,7 @@ function ProjectTasksPage() {
             {taskAiLoading && (
               <div className="flex flex-col items-center gap-4 py-6">
                 <svg className="h-10 w-10 animate-spin text-accent" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
-                <p className="text-[14px] font-medium leading-[20px] text-text-primary">Processing your voice note...</p>
+                <p className="text-[14px] font-medium leading-[20px] text-text-primary">Procesando tu nota de voz...</p>
               </div>
             )}
 
@@ -659,12 +622,12 @@ function ProjectTasksPage() {
             {addTaskTab === "manual" && (
               <div className="space-y-4 pt-2">
                 <div>
-                  <Label>Task name</Label>
-                  <Input value={taskName} onChange={(e: any) => setTaskName(e.target.value)} placeholder="What needs to be done?" wrapperClassName="max-w-full" />
+                  <Label>Nombre de la tarea</Label>
+                  <Input value={taskName} onChange={(e: any) => setTaskName(e.target.value)} placeholder="¿Qué hay que hacer?" wrapperClassName="max-w-full" />
                 </div>
                 <div>
-                  <Label>Description</Label>
-                  <Textarea value={taskDescription} onChange={(e: any) => setTaskDescription(e.target.value)} placeholder="Details about the task (optional)" wrapperClassName="max-w-full" rows={3} />
+                  <Label>Descripción</Label>
+                  <Textarea value={taskDescription} onChange={(e: any) => setTaskDescription(e.target.value)} placeholder="Detalles de la tarea (opcional)" wrapperClassName="max-w-full" rows={3} />
                 </div>
               </div>
             )}
@@ -678,7 +641,7 @@ function ProjectTasksPage() {
             {taskSuggestions.length > 0 && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-[14px] font-semibold leading-[20px] text-text-primary">Tasks ({taskSuggestions.length})</p>
+                  <p className="text-[14px] font-semibold leading-[20px] text-text-primary">Tareas ({taskSuggestions.length})</p>
                 </div>
                 <div className="space-y-2 max-h-[260px] overflow-y-auto">
                   {taskSuggestions.map((task, idx) => (
@@ -712,32 +675,32 @@ function ProjectTasksPage() {
         <DialogFooter>
           {addTaskTab === "manual" && !taskSuggestions.length && !taskSaved && (
             <>
-              <Button variant="secondary" size="md" onClick={() => { setShowAddTaskDialog(false); setTaskSuggestions([]); setTaskAiError(""); setAudioBase64(null); setAddTaskTab("voice"); setTaskName(""); setTaskDescription(""); }} disabled={taskSaving}>Cancel</Button>
-              <Button size="md" onClick={handleAddManualTask} disabled={taskSaving || !taskName.trim()}>{taskSaving ? "Saving..." : "Create task"}</Button>
+              <Button variant="secondary" size="md" onClick={() => { setShowAddTaskDialog(false); setTaskSuggestions([]); setTaskAiError(""); setAudioBase64(null); setAddTaskTab("voice"); setTaskName(""); setTaskDescription(""); }} disabled={taskSaving}>Cancelar</Button>
+              <Button size="md" onClick={handleAddManualTask} disabled={taskSaving || !taskName.trim()}>{taskSaving ? "Guardando..." : "Crear tarea"}</Button>
             </>
           )}
           {taskSuggestions.length > 0 && !taskSaved && (
             <>
-              <Button variant="secondary" size="md" onClick={() => { setShowAddTaskDialog(false); setTaskSuggestions([]); setTaskAiError(""); setAudioBase64(null); setAddTaskTab("voice"); setTaskName(""); setTaskDescription(""); }} disabled={taskSaving}>Cancel</Button>
-              <Button size="md" onClick={handleSaveAllSuggestions} disabled={taskSaving || taskSuggestions.length === 0}>{taskSaving ? "Saving..." : `Create All (${taskSuggestions.length})`}</Button>
+              <Button variant="secondary" size="md" onClick={() => { setShowAddTaskDialog(false); setTaskSuggestions([]); setTaskAiError(""); setAudioBase64(null); setAddTaskTab("voice"); setTaskName(""); setTaskDescription(""); }} disabled={taskSaving}>Cancelar</Button>
+              <Button size="md" onClick={handleSaveAllSuggestions} disabled={taskSaving || taskSuggestions.length === 0}>{taskSaving ? "Guardando..." : `Crear todas (${taskSuggestions.length})`}</Button>
             </>
           )}
           {!taskSuggestions.length && !taskAiLoading && !taskSaved && addTaskTab === "voice" && (
-            <Button variant="secondary" size="md" onClick={() => { setShowAddTaskDialog(false); setTaskAiError(""); setAudioBase64(null); setAddTaskTab("voice"); setTaskName(""); setTaskDescription(""); }}>Cancel</Button>
+            <Button variant="secondary" size="md" onClick={() => { setShowAddTaskDialog(false); setTaskAiError(""); setAudioBase64(null); setAddTaskTab("voice"); setTaskName(""); setTaskDescription(""); }}>Cancelar</Button>
           )}
           {taskSaved && (
-            <Button size="md" onClick={() => { setShowAddTaskDialog(false); setTaskSuggestions([]); setTaskSaved(null); setAudioBase64(null); setAddTaskTab("voice"); setTaskName(""); setTaskDescription(""); }}>Done</Button>
+            <Button size="md" onClick={() => { setShowAddTaskDialog(false); setTaskSuggestions([]); setTaskSaved(null); setAudioBase64(null); setAddTaskTab("voice"); setTaskName(""); setTaskDescription(""); }}>Hecho</Button>
           )}
         </DialogFooter>
       </Dialog>
 
       {/* Sign out dialog */}
       <Dialog open={confirmLogout.open} onClose={confirmLogout.close}>
-        <DialogHeader title="Sign out" description="Are you sure you want to sign out?" onClose={confirmLogout.close} />
-        <DialogBody>Your session will be ended.</DialogBody>
+        <DialogHeader title="Cerrar sesión" description="¿Estás seguro de que quieres cerrar sesión?" onClose={confirmLogout.close} />
+        <DialogBody>Tu sesión se cerrará.</DialogBody>
         <DialogFooter>
-          <Button variant="secondary" size="md" onClick={confirmLogout.close}>Cancel</Button>
-          <Button variant="danger" size="md" onClick={handleLogout}>Sign out</Button>
+          <Button variant="secondary" size="md" onClick={confirmLogout.close}>Cancelar</Button>
+          <Button variant="danger" size="md" onClick={handleLogout}>Cerrar sesión</Button>
         </DialogFooter>
       </Dialog>
     </main>

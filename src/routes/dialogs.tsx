@@ -1,4 +1,4 @@
-import { createRoute } from "@tanstack/react-router";
+import { createRoute, Link } from "@tanstack/react-router";
 import { Route as rootRoute } from "./__root";
 import { useState } from "react";
 import {
@@ -150,19 +150,19 @@ function DialogsView() {
             </div>
             <div className="flex items-center gap-2">
               <div className="flex rounded-[6px] border border-border bg-page p-0.5">
-                <a href="/design-system" className="inline-flex h-[28px] items-center rounded-[4px] px-3 text-[13px] font-medium leading-[20px] text-text-secondary no-underline hover:text-text-primary">
+                <Link to="/design-system" className="inline-flex h-[28px] items-center rounded-[4px] px-3 text-[13px] font-medium leading-[20px] text-text-secondary no-underline hover:text-text-primary">
                   Tokens
-                </a>
-                <a href="/forms" className="inline-flex h-[28px] items-center rounded-[4px] px-3 text-[13px] font-medium leading-[20px] text-text-secondary no-underline hover:text-text-primary">
+                </Link>
+                <Link to="/forms" className="inline-flex h-[28px] items-center rounded-[4px] px-3 text-[13px] font-medium leading-[20px] text-text-secondary no-underline hover:text-text-primary">
                   Formularios
-                </a>
-                <a href="/dialogs" className="inline-flex h-[28px] items-center rounded-[4px] bg-card px-3 text-[13px] font-medium leading-[20px] text-text-primary no-underline border border-border">
+                </Link>
+                <Link to="/dialogs" className="inline-flex h-[28px] items-center rounded-[4px] bg-card px-3 text-[13px] font-medium leading-[20px] text-text-primary no-underline border border-border">
                   Dialogs
-                </a>
+                </Link>
               </div>
-              <a href="/" className="inline-flex h-[28px] items-center rounded-[6px] bg-text-primary px-2 text-[14px] font-medium leading-[20px] text-white no-underline">
+              <Link to="/" className="inline-flex h-[28px] items-center rounded-[6px] bg-text-primary px-2 text-[14px] font-medium leading-[20px] text-white no-underline">
                 Volver
-              </a>
+              </Link>
             </div>
           </div>
         </div>

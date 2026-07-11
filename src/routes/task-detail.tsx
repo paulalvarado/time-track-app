@@ -2,6 +2,7 @@ import { createRoute, useNavigate, Link, useLocation } from "@tanstack/react-rou
 import { Route as rootRoute } from "./__root";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Button, Dropdown, DropdownItem, DropdownDivider, Dialog, DialogHeader, DialogBody, DialogFooter, useDialog, Input, Label, DatePicker, NumberInput, SelectMenu, Textarea, Tooltip } from "../components/ui";
+import { Breadcrumb } from "../components/breadcrumb";
 import { useCatalog, type CatalogItem } from "../lib/use-catalog";
 import { useDarkMode } from "../lib/use-dark-mode";
 
@@ -191,7 +192,7 @@ function TaskDetailPage() {
         setRecordingDuration((prev) => prev + 1);
       }, 1000);
     } catch {
-      setAiError("Microphone access denied. Please allow microphone permissions.");
+      setAiError("Acceso al micrófono denegado. Por favor permite los permisos del micrófono.");
     }
   }, []);
 
@@ -233,12 +234,12 @@ function TaskDetailPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setAiError(data.error || "Transcription failed");
+        setAiError(data.error || "Transcripción fallida");
       } else {
         setSuggestions(data.entries || []);
       }
     } catch {
-      setAiError("Connection error. Please try again.");
+      setAiError("Error de conexión. Intenta de nuevo.");
     } finally {
       setAiLoading(false);
     }
@@ -313,7 +314,7 @@ function TaskDetailPage() {
       });
       const data = await res.json();
       if (data.ok) {
-        setBatchResult(data.message || "Entries saved.");
+        setBatchResult(data.message || "Registros guardados.");
         // Refresh timesheets
         fetch(`/api/sync/projects/${projectId}/tasks/${taskId}/timesheets`)
           .then((r) => r.ok ? r.json() : null)
@@ -322,7 +323,7 @@ function TaskDetailPage() {
         // Close dialog after 2s
         setTimeout(() => { setShowAiDialog(false); setBatchResult(null); setSuggestions([]); }, 2000);
       } else {
-        setAiError(data.message || "Failed to save entries.");
+        setAiError(data.message || "Error al guardar los registros.");
       }
     } catch {
       setAiError("Connection error. Please try again.");
@@ -344,7 +345,7 @@ function TaskDetailPage() {
     if (editUserId && editUserId !== String(selectedTs.userId ?? "")) body.userId = parseInt(editUserId);
 
     if (Object.keys(body).length === 0) {
-      setEditError("No changes to save.");
+        setEditError("No hay cambios que guardar.");
       setSaving(false);
       return;
     }
@@ -357,7 +358,7 @@ function TaskDetailPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setEditError(data.error || "Failed to save");
+        setEditError(data.error || "Error al guardar");
         setSaving(false);
         return;
       }
@@ -368,7 +369,7 @@ function TaskDetailPage() {
         .then((tsData) => { if (tsData) setTimesheets(tsData.timesheets || []); })
         .catch(() => {});
     } catch {
-      setEditError("Connection error. Please try again.");
+      setAiError("Error de conexión. Intenta de nuevo.");
     } finally {
       setSaving(false);
     }
@@ -377,19 +378,14 @@ function TaskDetailPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-page">
-        <header className="border-b border-border bg-card">
-          <div className="mx-auto max-w-[1200px] px-6 h-16 flex items-center justify-between">
-            <Link to="/projects" className="flex items-center gap-2 no-underline"><LogoSvg /><span className="text-[16px] font-semibold text-text-primary">Time Track</span></Link>
-            <div className="flex items-center gap-3"><Link to="/settings" className="text-[14px] leading-[20px] text-text-secondary hover:text-text-primary no-underline">Settings</Link></div>
-          </div>
-        </header>
+
         <div className="mx-auto max-w-[1200px] px-6 py-20 flex items-center justify-center">
           <div className="flex items-center gap-2 text-[14px] text-text-muted">
             <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
-            Loading...
+            Cargando...
           </div>
         </div>
       </main>
@@ -398,46 +394,19 @@ function TaskDetailPage() {
 
   return (
     <main className="min-h-screen bg-page">
-      {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="mx-auto max-w-[1200px] px-6 h-16 flex items-center justify-between">
-          <Link to="/projects" className="flex items-center gap-2 no-underline"><LogoSvg /><span className="text-[16px] font-semibold text-text-primary">Time Track</span></Link>
-          <div className="flex items-center gap-3">
-            <Link to="/settings" className="text-[14px] leading-[20px] text-text-secondary hover:text-text-primary no-underline">Settings</Link>
-            {user && (
-              <Dropdown align="end" trigger={
-                <div className="flex items-center gap-2 cursor-pointer select-none">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-surface text-[11px] font-medium text-text-secondary">{user.name.charAt(0).toUpperCase()}</div>
-                  <span className="text-[13px] leading-[18px] text-text-secondary hidden sm:block">{user.name}</span>
-                </div>
-              }>
-                <DropdownItem icon={<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>} onClick={() => navigate({ to: "/settings" })}>Settings</DropdownItem>
-                <DropdownDivider />
-                <DropdownItem icon={<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d={isDark ? "M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" : "M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z"} /></svg>} onClick={toggleDark}>{isDark ? "Light mode" : "Dark mode"}</DropdownItem>
-                <DropdownDivider />
-                <DropdownItem variant="danger" icon={<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V15m-3 0-3-3m0 0 3-3m-3 3H15" /></svg>} onClick={confirmLogout.show}>Sign out</DropdownItem>
-              </Dropdown>
-            )}
-          </div>
-        </div>
-      </header>
 
-      {/* Breadcrumb */}
-      <div className="mx-auto max-w-[1200px] px-6 py-4 min-w-0">
-        <div className="flex items-center gap-1.5 sm:gap-2 text-[12px] sm:text-[13px] leading-[18px] text-text-muted overflow-hidden">
-          <Link to="/projects" className="hover:text-text-primary no-underline text-inherit shrink-0">Projects</Link>
-          <span className="shrink-0">/</span>
-          <Link to="/projects/$projectId" params={{ projectId }} className="hover:text-text-primary no-underline text-inherit truncate min-w-0 max-w-[120px] sm:max-w-none">{projectName}</Link>
-          <span className="shrink-0">/</span>
-          <span className="text-text-secondary truncate min-w-0">Task: {task?.name || `#${taskId}`}</span>
-        </div>
-      </div>
+
+      <Breadcrumb items={[
+        { label: "Proyectos", to: "/projects" },
+        { label: projectName, to: "/projects/$projectId", params: { projectId } },
+        { label: task?.name || `#${taskId}` },
+      ]} />
 
       {/* Task detail */}
       <div className="mx-auto max-w-[1200px] px-6 pb-8">
         {!task ? (
           <div className="rounded-[12px] border border-border bg-card p-12 text-center">
-            <p className="text-[14px] leading-[20px] text-text-muted">Task not found.</p>
+            <p className="text-[14px] leading-[20px] text-text-muted">Tarea no encontrada.</p>
           </div>
         ) : (
           <div className="max-w-2xl">
@@ -454,7 +423,7 @@ function TaskDetailPage() {
                 </h1>
                 {task.isMyTask && (
                   <span className="shrink-0 rounded-[4px] bg-accent px-1.5 py-0.5 text-[10px] font-medium leading-[14px] text-white tracking-[-0.1px]">
-                    Mine
+                    Mía
                   </span>
                 )}
               </div>
@@ -462,17 +431,17 @@ function TaskDetailPage() {
               {/* Info grid - always visible */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6 pb-6 border-b border-border">
                 <div>
-                  <p className="text-[11px] font-semibold leading-[16px] text-text-muted uppercase tracking-[-0.1px] mb-1">Stage</p>
+                  <p className="text-[11px] font-semibold leading-[16px] text-text-muted uppercase tracking-[-0.1px] mb-1">Etapa</p>
                   <p className="text-[14px] leading-[20px] text-text-primary">{task.stageName}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold leading-[16px] text-text-muted uppercase tracking-[-0.1px] mb-1">Priority</p>
+                  <p className="text-[11px] font-semibold leading-[16px] text-text-muted uppercase tracking-[-0.1px] mb-1">Prioridad</p>
                   <span className="inline-flex items-center rounded-[4px] bg-surface px-2 py-0.5 text-[12px] font-medium leading-[16px]" style={{ color: getPriorityColor(task.priority) }}>
                     {getPriorityLabel(task.priority)}
                   </span>
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold leading-[16px] text-text-muted uppercase tracking-[-0.1px] mb-1">Assignees</p>
+                  <p className="text-[11px] font-semibold leading-[16px] text-text-muted uppercase tracking-[-0.1px] mb-1">Asignados</p>
                   {task.assignees.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
                       {task.assignees.map((a: [number, string]) => (
@@ -482,7 +451,7 @@ function TaskDetailPage() {
                         </div>
                       ))}
                     </div>
-                  ) : (<p className="text-[14px] leading-[20px] text-text-muted">Unassigned</p>)}
+                  ) : (<p className="text-[14px] leading-[20px] text-text-muted">Sin asignar</p>)}
                 </div>
               </div>
 
@@ -490,7 +459,7 @@ function TaskDetailPage() {
               <div className="flex items-center gap-1 rounded-[8px] bg-surface p-1 mb-6">
                 <button type="button" onClick={() => navigate({ to: `/projects/${projectId}/tasks/${taskId}` })}
                   className={`px-3 py-1.5 text-[13px] font-medium leading-[18px] rounded-[6px] transition-all duration-150 cursor-pointer ${activeTab === "description" ? "bg-card text-text-primary shadow-[0px_1px_1px_#00000008,0_0_0_1px_#0000000a_inset]" : "text-text-muted hover:text-text-secondary"}`}>
-                  Description
+                  Descripción
                 </button>
                 <button type="button" onClick={() => navigate({ to: `/projects/${projectId}/tasks/${taskId}/timesheet` })}
                   className={`px-3 py-1.5 text-[13px] font-medium leading-[18px] rounded-[6px] transition-all duration-150 cursor-pointer ${activeTab === "timesheet" ? "bg-card text-text-primary shadow-[0px_1px_1px_#00000008,0_0_0_1px_#0000000a_inset]" : "text-text-muted hover:text-text-secondary"}`}>
@@ -509,7 +478,7 @@ function TaskDetailPage() {
                       <div className="text-[14px] leading-[22px] text-text-secondary [&_p]:mb-2 [&_h1]:text-[18px] [&_h1]:font-semibold [&_h1]:text-text-primary [&_h1]:mt-4 [&_h2]:text-[16px] [&_h2]:font-semibold [&_h2]:text-text-primary [&_h2]:mt-3 [&_h3]:text-[14px] [&_h3]:font-semibold [&_h3]:text-text-primary [&_h3]:mt-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-2 [&_li]:mb-1 [&_br]:block [&_br]:content-[''] [&_br]:my-1" dangerouslySetInnerHTML={{ __html: task.description }} />
                     </div>
                   ) : (
-                    <p className="text-[14px] leading-[20px] text-text-muted">No description provided.</p>
+                    <p className="text-[14px] leading-[20px] text-text-muted">Sin descripción.</p>
                   )}
                 </>
               )}
@@ -520,8 +489,8 @@ function TaskDetailPage() {
                   <div className="flex items-center justify-between mb-4">
                     <p className="text-[13px] font-medium leading-[18px] text-text-secondary">
                       {timesheets.length > 0
-                        ? `${timesheets.length} entr${timesheets.length === 1 ? "y" : "ies"} — ${timesheets.reduce((s: number, t: any) => s + t.hours, 0).toFixed(1)}h total`
-                        : "No timesheet entries"}
+                        ? `${timesheets.length} entrada${timesheets.length === 1 ? "" : "s"} — ${timesheets.reduce((s: number, t: any) => s + t.hours, 0).toFixed(1)}h total`
+                        : "Sin registros de tiempo"}
                     </p>
                   </div>
                   {timesheets.length > 0 && (
@@ -529,10 +498,10 @@ function TaskDetailPage() {
                       <table className="w-full text-left">
                         <thead>
                           <tr className="border-b border-border bg-page">
-                            <th className="px-3 py-2 text-[11px] font-semibold leading-[16px] text-text-muted uppercase tracking-[-0.1px]">Date</th>
-                            <th className="px-3 py-2 text-[11px] font-semibold leading-[16px] text-text-muted uppercase tracking-[-0.1px]">Description</th>
-                            <th className="px-3 py-2 text-[11px] font-semibold leading-[16px] text-text-muted uppercase tracking-[-0.1px]">User</th>
-                            <th className="px-3 py-2 text-[11px] font-semibold leading-[16px] text-text-muted uppercase tracking-[-0.1px] text-right">Hours</th>
+                            <th className="px-3 py-2 text-[11px] font-semibold leading-[16px] text-text-muted uppercase tracking-[-0.1px]">Fecha</th>
+                            <th className="px-3 py-2 text-[11px] font-semibold leading-[16px] text-text-muted uppercase tracking-[-0.1px]">Descripción</th>
+                            <th className="px-3 py-2 text-[11px] font-semibold leading-[16px] text-text-muted uppercase tracking-[-0.1px]">Usuario</th>
+                            <th className="px-3 py-2 text-[11px] font-semibold leading-[16px] text-text-muted uppercase tracking-[-0.1px] text-right">Horas</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -565,7 +534,7 @@ function TaskDetailPage() {
                   <button
                     onClick={() => { setShowAiDialog(true); setAiError(""); setSuggestions([]); setAudioBase64(null); setBatchResult(null); setEmployeeId(prev => prev || localStorage.getItem("lastEmployeeId") || ""); }}
                     className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-white shadow-[0px_4px_12px_#0070f34d,0px_1px_2px_#0000001a] hover:bg-accent/90 hover:shadow-[0px_6px_16px_#0070f366] active:scale-95 transition-all duration-200 cursor-pointer"
-                    aria-label="Add timesheet entries"
+                    aria-label="Añadir registros de tiempo"
                   >
                     <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -577,7 +546,7 @@ function TaskDetailPage() {
               {/* Back button */}
               <div className="mt-8 pt-6 border-t border-border">
                 <Link to="/projects/$projectId" params={{ projectId }}>
-                  <Button variant="secondary" size="md">← Back to Kanban</Button>
+                  <Button variant="secondary" size="md">← Volver al Kanban</Button>
                 </Link>
               </div>
             </div>
@@ -588,26 +557,26 @@ function TaskDetailPage() {
 
       {/* Timesheet edit dialog */}
       <Dialog open={editDialog.open} onClose={() => { setEditError(""); setEditSuccess(""); editDialog.close(); }}>
-        <DialogHeader title="Edit timesheet entry" description="Update the details below." onClose={() => { setEditError(""); setEditSuccess(""); editDialog.close(); }} />
+        <DialogHeader title="Editar registro de tiempo" description="Actualiza los detalles a continuación." onClose={() => { setEditError(""); setEditSuccess(""); editDialog.close(); }} />
         <DialogBody>
           {selectedTs && (
             <div className="space-y-4">
               <div>
-                <Label>Date</Label>
+                <Label>Fecha</Label>
                 <DatePicker
                   value={editDate || selectedTs?.date?.split("T")[0] || ""}
                   onChange={(val) => setEditDate(val)}
                   wrapperClassName="max-w-full" />
               </div>
               <div>
-                <Label>Description</Label>
+                <Label>Descripción</Label>
                 <Textarea
                   defaultValue={selectedTs.name || ""}
                   onChange={(e: any) => setEditName(e.target.value)}
-                  placeholder="Description" wrapperClassName="max-w-full" rows={3} />
+                  placeholder="Descripción" wrapperClassName="max-w-full" rows={3} />
               </div>
               <div>
-                <Label>Hours</Label>
+                <Label>Horas</Label>
                 <NumberInput
                   value={editHours}
                   onChange={(val) => setEditHours(val)}
@@ -615,12 +584,12 @@ function TaskDetailPage() {
                   wrapperClassName="max-w-full" />
               </div>
               <div>
-                <Label>User</Label>
+                <Label>Usuario</Label>
                 <SelectMenu
                   options={userItems.map((u: CatalogItem) => ({ value: u.key, label: u.value }))}
                   value={editUserId}
                   onChange={(val) => { setEditUserId(val); if (val) localStorage.setItem("lastEmployeeId", val); }}
-                  placeholder="Select user..."
+                  placeholder="Seleccionar usuario..."
                   wrapperClassName="max-w-full" />
               </div>
               {editError && (
@@ -637,28 +606,28 @@ function TaskDetailPage() {
           )}
         </DialogBody>
         <DialogFooter>
-          <Button variant="secondary" size="md" onClick={() => { setEditError(""); setEditSuccess(""); editDialog.close(); }} disabled={saving}>Cancel</Button>
-          <Button size="md" onClick={handleEditSave} disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
+          <Button variant="secondary" size="md" onClick={() => { setEditError(""); setEditSuccess(""); editDialog.close(); }} disabled={saving}>Cancelar</Button>
+          <Button size="md" onClick={handleEditSave} disabled={saving}>{saving ? "Guardando..." : "Guardar"}</Button>
         </DialogFooter>
       </Dialog>
 
       {/* AI Recording Dialog */}
       <Dialog open={showAiDialog} onClose={() => { if (!isRecording && !aiLoading && !savingBatch) { setShowAiDialog(false); setSuggestions([]); setAiError(""); setBatchResult(null); setAudioBase64(null); setAiDialogTab("voice"); setSelectedForDelete(new Set()); } }}>
         <DialogHeader
-          title="Add timesheet entries"
-          description="Add entries via voice note or manually."
+          title="Añadir registros de tiempo"
+          description="Añade registros por voz o manualmente."
           onClose={() => { if (!isRecording && !aiLoading && !savingBatch) { setShowAiDialog(false); setSuggestions([]); setAiError(""); setBatchResult(null); setAudioBase64(null); setAiDialogTab("voice"); setSelectedForDelete(new Set()); } }}
         />
         <DialogBody>
           <div className="space-y-5">
             {/* Employee selector */}
             <div>
-              <Label>Employee</Label>
+              <Label>Empleado</Label>
               <SelectMenu
                 options={userItems.map((u: CatalogItem) => ({ value: u.key, label: u.value }))}
                 value={employeeId}
                 onChange={(val) => setEmployeeId(val)}
-                placeholder={empLoading ? "Loading employees..." : "Select employee..."}
+                placeholder={empLoading ? "Cargando empleados..." : "Seleccionar empleado..."}
                 wrapperClassName="max-w-full" />
             </div>
 
@@ -673,7 +642,7 @@ function TaskDetailPage() {
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z" />
                 </svg>
-                Voice note
+                Nota de voz
               </button>
               <button type="button" onClick={() => setAiDialogTab("manual")}
                 className={`px-3 py-1.5 text-[13px] font-medium leading-[18px] rounded-[6px] transition-all duration-150 cursor-pointer flex items-center gap-1.5 ${
@@ -684,7 +653,7 @@ function TaskDetailPage() {
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
                 </svg>
-                Manual entry
+                Manual
               </button>
             </div>
 
@@ -702,7 +671,7 @@ function TaskDetailPage() {
                       ? "bg-red-500 scale-110"
                       : "bg-accent hover:bg-accent/90 active:scale-95 shadow-[0px_4px_12px_#0070f34d]"
                     }`}
-                  aria-label={isRecording ? "Recording... release to stop" : "Hold to record"}
+                  aria-label={isRecording ? "Grabando... suelta para detener" : "Mantén para grabar"}
                 >
                   {isRecording && (
                     <>
@@ -725,16 +694,16 @@ function TaskDetailPage() {
                     <div className="flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
                       <span className="text-[13px] font-medium leading-[18px] text-red-500">
-                        Recording... {Math.floor(recordingDuration / 60)}:{(recordingDuration % 60).toString().padStart(2, "0")}
+                        Grabando... {Math.floor(recordingDuration / 60)}:{(recordingDuration % 60).toString().padStart(2, "0")}
                       </span>
                     </div>
-                    <p className="text-[12px] leading-[16px] text-text-muted">Release to stop</p>
+                    <p className="text-[12px] leading-[16px] text-text-muted">Suelta para detener</p>
                   </div>
                 )}
 
                 {!isRecording && (
                   <p className="text-[13px] leading-[18px] text-text-secondary text-center max-w-xs">
-                    Hold the microphone button and speak clearly about the work you did.
+                    Mantén presionado el micrófono y habla claramente sobre el trabajo que realizaste.
                   </p>
                 )}
               </div>
@@ -749,7 +718,7 @@ function TaskDetailPage() {
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
                 </div>
-                <p className="text-[14px] font-medium leading-[20px] text-text-primary">Processing your voice note...</p>
+                <p className="text-[14px] font-medium leading-[20px] text-text-primary">Procesando tu nota de voz...</p>
               </div>
             )}
 
@@ -757,18 +726,18 @@ function TaskDetailPage() {
             {aiDialogTab === "manual" && (
               <div className="space-y-4 pt-2">
                 <div>
-                  <Label>Date</Label>
+                  <Label>Fecha</Label>
                   <DatePicker value={manualDate} onChange={(val) => setManualDate(val)} wrapperClassName="max-w-full" />
                 </div>
                 <div>
-                  <Label>Description</Label>
-                  <Textarea placeholder="What did you work on?" value={manualConcept} onChange={(e: any) => setManualConcept(e.target.value)} wrapperClassName="max-w-full" rows={3} />
+                  <Label>Descripción</Label>
+                  <Textarea placeholder="¿En qué trabajaste?" value={manualConcept} onChange={(e: any) => setManualConcept(e.target.value)} wrapperClassName="max-w-full" rows={3} />
                 </div>
                 <div>
-                  <Label>Hours</Label>
+                  <Label>Horas</Label>
                   <div className="flex gap-2">
                     <NumberInput value={manualHours} onChange={(val) => setManualHours(val)} step={0.5} min={0} wrapperClassName="flex-1" />
-                    <Button size="md" onClick={handleAddManualEntry} disabled={!manualConcept.trim() || !manualHours}>Add entry</Button>
+                    <Button size="md" onClick={handleAddManualEntry} disabled={!manualConcept.trim() || !manualHours}>Añadir</Button>
                   </div>
                 </div>
               </div>
@@ -784,10 +753,10 @@ function TaskDetailPage() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <p className="text-[14px] font-semibold leading-[20px] text-text-primary">Entries ({suggestions.length})</p>
+                    <p className="text-[14px] font-semibold leading-[20px] text-text-primary">Registros ({suggestions.length})</p>
                     {selectedForDelete.size > 0 && (
                       <button onClick={handleDeleteSelected} className="text-[12px] font-medium leading-[16px] text-danger hover:text-danger/80 transition-colors cursor-pointer">
-                        Delete {selectedForDelete.size} selected
+                        Eliminar {selectedForDelete.size} seleccionados
                       </button>
                     )}
                   </div>
@@ -818,7 +787,7 @@ function TaskDetailPage() {
                               <span className="text-[16px] font-semibold leading-[22px] text-accent">{entry.hours.toFixed(1)}h</span>
                               <button onClick={() => handleDeleteEntry(idx)}
                                 className="flex h-6 w-6 items-center justify-center rounded-[4px] text-text-muted hover:text-danger hover:bg-danger-bg/50 transition-colors cursor-pointer"
-                                title="Delete entry">
+                                title="Eliminar registro">
                                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
                                 </svg>
@@ -860,7 +829,7 @@ function TaskDetailPage() {
                 disabled={savingBatch}
                 className="inline-flex items-center justify-center whitespace-nowrap rounded-[6px] border transition-all duration-150 focus:outline-none focus:ring-[3px] focus:ring-text-primary/10 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 h-10 px-4 text-[14px] font-medium leading-[20px] bg-card text-text-primary hover:bg-page border-border"
               >
-                Cancel
+                Cancelar
               </button>
               <button
                 type="button"
@@ -868,7 +837,7 @@ function TaskDetailPage() {
                 disabled={savingBatch || suggestions.length === 0}
                 className="inline-flex items-center justify-center whitespace-nowrap rounded-[6px] border transition-all duration-150 focus:outline-none focus:ring-[3px] focus:ring-text-primary/10 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 h-10 px-4 text-[14px] font-medium leading-[20px] border-transparent bg-[#171717] text-white dark:bg-white dark:text-[#171717] hover:bg-[#000000] dark:hover:bg-white/90"
               >
-                {savingBatch ? "Saving..." : `Save All (${suggestions.reduce((s, e) => s + e.hours, 0).toFixed(1)}h)`}
+                {savingBatch ? "Guardando..." : `Guardar todo (${suggestions.reduce((s, e) => s + e.hours, 0).toFixed(1)}h)`}
               </button>
             </>
           )}
@@ -878,7 +847,7 @@ function TaskDetailPage() {
               onClick={() => { setShowAiDialog(false); setAiError(""); setAudioBase64(null); setAiDialogTab("voice"); setSelectedForDelete(new Set()); }}
               className="inline-flex items-center justify-center whitespace-nowrap rounded-[6px] border transition-all duration-150 focus:outline-none focus:ring-[3px] focus:ring-text-primary/10 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 h-10 px-4 text-[14px] font-medium leading-[20px] bg-card text-text-primary hover:bg-page border-border"
             >
-              Cancel
+              Cancelar
             </button>
           )}
           {batchResult && (
@@ -887,7 +856,7 @@ function TaskDetailPage() {
               onClick={() => { setShowAiDialog(false); setSuggestions([]); setBatchResult(null); setAudioBase64(null); setAiDialogTab("voice"); setSelectedForDelete(new Set()); }}
               className="inline-flex items-center justify-center whitespace-nowrap rounded-[6px] border transition-all duration-150 focus:outline-none focus:ring-[3px] focus:ring-text-primary/10 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 h-10 px-4 text-[14px] font-medium leading-[20px] border-transparent bg-[#171717] text-white dark:bg-white dark:text-[#171717] hover:bg-[#000000] dark:hover:bg-white/90"
             >
-              Done
+              Hecho
             </button>
           )}
         </DialogFooter>
@@ -895,11 +864,11 @@ function TaskDetailPage() {
 
       {/* Sign out dialog */}
       <Dialog open={confirmLogout.open} onClose={confirmLogout.close}>
-        <DialogHeader title="Sign out" description="Are you sure you want to sign out?" onClose={confirmLogout.close} />
-        <DialogBody>Your session will be ended.</DialogBody>
+        <DialogHeader title="Cerrar sesión" description="¿Estás seguro de que quieres cerrar sesión?" onClose={confirmLogout.close} />
+        <DialogBody>Tu sesión se cerrará.</DialogBody>
         <DialogFooter>
-          <Button variant="secondary" size="md" onClick={confirmLogout.close}>Cancel</Button>
-          <Button variant="danger" size="md" onClick={handleLogout}>Sign out</Button>
+          <Button variant="secondary" size="md" onClick={confirmLogout.close}>Cancelar</Button>
+          <Button variant="danger" size="md" onClick={handleLogout}>Cerrar sesión</Button>
         </DialogFooter>
       </Dialog>
     </main>

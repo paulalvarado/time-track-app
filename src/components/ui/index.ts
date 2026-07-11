@@ -15,3 +15,4 @@ export { Dialog, DialogHeader, DialogBody, DialogFooter, useDialog } from "./dia
 export { Label } from "./label";
 export { Tooltip } from "./tooltip";
 export { ThemeToggle } from "./theme-toggle";
+export { PasswordRequirements } from "./password-requirements";

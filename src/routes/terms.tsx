@@ -24,7 +24,7 @@ function TermsPage() {
             <span className="text-[16px] font-semibold text-text-primary">Time Track</span>
           </div>
           <Link to="/register" className="inline-flex h-[28px] items-center rounded-[6px] bg-[#171717] px-2 text-[14px] font-medium leading-[20px] text-[#ffffff] no-underline">
-            Sign up
+            Registrarse
           </Link>
         </div>
       </header>
@@ -32,54 +32,54 @@ function TermsPage() {
       <div className="mx-auto max-w-[640px] px-6 py-12 space-y-8">
         <div>
           <h1 className="text-[32px] font-semibold leading-[40px] tracking-[-1.28px] text-text-primary">
-            Terms of Service.
+            Términos de Servicio.
           </h1>
-          <p className="mt-2 text-[14px] leading-[20px] text-text-muted">Last updated: July 4, 2026</p>
+          <p className="mt-2 text-[14px] leading-[20px] text-text-muted">Última actualización: 4 de julio de 2026</p>
         </div>
 
         <div className="space-y-6 text-[14px] leading-[24px] text-text-secondary">
           <section className="space-y-2">
-            <h2 className="text-[18px] font-semibold leading-[26px] tracking-[-0.36px] text-text-primary">1. Acceptance of Terms</h2>
-            <p>By accessing or using Time Track ("the Service"), you agree to be bound by these Terms of Service. If you do not agree, you may not use the Service.</p>
+            <h2 className="text-[18px] font-semibold leading-[26px] tracking-[-0.36px] text-text-primary">1. Aceptación de los Términos</h2>
+            <p>Al acceder o usar Time Track ("el Servicio"), aceptas quedar vinculado por estos Términos de Servicio. Si no estás de acuerdo, no puedes usar el Servicio.</p>
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-[18px] font-semibold leading-[26px] tracking-[-0.36px] text-text-primary">2. Description of Service</h2>
-            <p>Time Track provides time tracking functionality with Odoo integration. The Service allows users to log, manage, and report time entries associated with projects.</p>
+            <h2 className="text-[18px] font-semibold leading-[26px] tracking-[-0.36px] text-text-primary">2. Descripción del Servicio</h2>
+            <p>Time Track proporciona funcionalidad de registro de tiempo con integración a Odoo. El Servicio permite a los usuarios registrar, gestionar y reportar entradas de tiempo asociadas a proyectos.</p>
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-[18px] font-semibold leading-[26px] tracking-[-0.36px] text-text-primary">3. User Responsibilities</h2>
-            <p>You are responsible for maintaining the confidentiality of your account credentials. You agree to provide accurate information and keep it updated. You must not use the Service for any unlawful purpose.</p>
+            <h2 className="text-[18px] font-semibold leading-[26px] tracking-[-0.36px] text-text-primary">3. Responsabilidades del Usuario</h2>
+            <p>Eres responsable de mantener la confidencialidad de tus credenciales de cuenta. Aceptas proporcionar información precisa y mantenerla actualizada. No debes usar el Servicio para ningún propósito ilícito.</p>
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-[18px] font-semibold leading-[26px] tracking-[-0.36px] text-text-primary">4. Data Privacy</h2>
-            <p>Your use of the Service is governed by our Privacy Policy. We implement reasonable security measures to protect your data, but no method of transmission over the Internet is completely secure.</p>
+            <h2 className="text-[18px] font-semibold leading-[26px] tracking-[-0.36px] text-text-primary">4. Privacidad de los Datos</h2>
+            <p>Tu uso del Servicio se rige por nuestra Política de Privacidad. Implementamos medidas de seguridad razonables para proteger tus datos, pero ningún método de transmisión por Internet es completamente seguro.</p>
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-[18px] font-semibold leading-[26px] tracking-[-0.36px] text-text-primary">5. Limitation of Liability</h2>
-            <p>Time Track is provided "as is" without warranties of any kind. We shall not be liable for any damages arising from your use of the Service.</p>
+            <h2 className="text-[18px] font-semibold leading-[26px] tracking-[-0.36px] text-text-primary">5. Limitación de Responsabilidad</h2>
+            <p>Time Track se proporciona "tal cual" sin garantías de ningún tipo. No seremos responsables por daños derivados del uso del Servicio.</p>
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-[18px] font-semibold leading-[26px] tracking-[-0.36px] text-text-primary">6. Changes to Terms</h2>
-            <p>We reserve the right to modify these terms at any time. Changes will be effective immediately upon posting. Continued use of the Service after changes constitutes acceptance.</p>
+            <h2 className="text-[18px] font-semibold leading-[26px] tracking-[-0.36px] text-text-primary">6. Cambios en los Términos</h2>
+            <p>Nos reservamos el derecho de modificar estos términos en cualquier momento. Los cambios serán efectivos inmediatamente después de su publicación. El uso continuado del Servicio después de los cambios constituye la aceptación de los mismos.</p>
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-[18px] font-semibold leading-[26px] tracking-[-0.36px] text-text-primary">7. Contact</h2>
-            <p>For questions about these terms, please contact support@timetrack.app.</p>
+            <h2 className="text-[18px] font-semibold leading-[26px] tracking-[-0.36px] text-text-primary">7. Contacto</h2>
+            <p>Si tienes preguntas sobre estos términos, contacta a support@timetrack.app.</p>
           </section>
         </div>
 
         <div className="border-t border-border pt-6 flex gap-3">
           <Link to="/register">
-            <Button size="md">Back to sign up</Button>
+            <Button size="md">Volver a registrarse</Button>
           </Link>
           <Link to="/privacy">
-            <Button variant="secondary" size="md">Privacy Policy</Button>
+            <Button variant="secondary" size="md">Política de Privacidad</Button>
           </Link>
         </div>
       </div>

@@ -24,7 +24,7 @@ function PrivacyPage() {
             <span className="text-[16px] font-semibold text-text-primary">Time Track</span>
           </div>
           <Link to="/register" className="inline-flex h-[28px] items-center rounded-[6px] bg-[#171717] px-2 text-[14px] font-medium leading-[20px] text-[#ffffff] no-underline">
-            Sign up
+            Registrarse
           </Link>
         </div>
       </header>
@@ -32,54 +32,54 @@ function PrivacyPage() {
       <div className="mx-auto max-w-[640px] px-6 py-12 space-y-8">
         <div>
           <h1 className="text-[32px] font-semibold leading-[40px] tracking-[-1.28px] text-text-primary">
-            Privacy Policy.
+            Política de Privacidad.
           </h1>
-          <p className="mt-2 text-[14px] leading-[20px] text-text-muted">Last updated: July 4, 2026</p>
+          <p className="mt-2 text-[14px] leading-[20px] text-text-muted">Última actualización: 4 de julio de 2026</p>
         </div>
 
         <div className="space-y-6 text-[14px] leading-[24px] text-text-secondary">
           <section className="space-y-2">
-            <h2 className="text-[18px] font-semibold leading-[26px] tracking-[-0.36px] text-text-primary">1. Information We Collect</h2>
-            <p>We collect information you provide when creating an account, including your name, email address, and authentication credentials. We also collect time tracking data you enter into the Service.</p>
+            <h2 className="text-[18px] font-semibold leading-[26px] tracking-[-0.36px] text-text-primary">1. Información que Recopilamos</h2>
+            <p>Recopilamos la información que proporcionas al crear una cuenta, incluyendo tu nombre, correo electrónico y credenciales de autenticación. También recopilamos los datos de registro de tiempo que ingresas en el Servicio.</p>
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-[18px] font-semibold leading-[26px] tracking-[-0.36px] text-text-primary">2. How We Use Your Information</h2>
-            <p>We use your information to provide, maintain, and improve the Service; to authenticate your access; to communicate with you about your account; and to comply with legal obligations.</p>
+            <h2 className="text-[18px] font-semibold leading-[26px] tracking-[-0.36px] text-text-primary">2. Cómo Usamos tu Información</h2>
+            <p>Usamos tu información para proporcionar, mantener y mejorar el Servicio; para autenticar tu acceso; para comunicarnos contigo sobre tu cuenta; y para cumplir con obligaciones legales.</p>
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-[18px] font-semibold leading-[26px] tracking-[-0.36px] text-text-primary">3. Data Sharing</h2>
-            <p>We do not sell your personal data. We may share data with third-party service providers (e.g., Odoo) as necessary to deliver the Service, under contractual agreements that protect your data.</p>
+            <h2 className="text-[18px] font-semibold leading-[26px] tracking-[-0.36px] text-text-primary">3. Compartir Datos</h2>
+            <p>No vendemos tus datos personales. Podemos compartir datos con proveedores de servicios externos (ej. Odoo) según sea necesario para brindar el Servicio, bajo acuerdos contractuales que protegen tus datos.</p>
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-[18px] font-semibold leading-[26px] tracking-[-0.36px] text-text-primary">4. Data Security</h2>
-            <p>We implement industry-standard security measures including encryption in transit (TLS) and at rest. Passwords are hashed using bcrypt. However, no system is 100% secure.</p>
+            <h2 className="text-[18px] font-semibold leading-[26px] tracking-[-0.36px] text-text-primary">4. Seguridad de los Datos</h2>
+            <p>Implementamos medidas de seguridad estándar de la industria, incluyendo cifrado en tránsito (TLS) y en reposo. Las contraseñas se cifran usando bcrypt. Sin embargo, ningún sistema es 100% seguro.</p>
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-[18px] font-semibold leading-[26px] tracking-[-0.36px] text-text-primary">5. Your Rights</h2>
-            <p>You may access, update, or delete your account information at any time. You can request data export or account deletion by contacting us.</p>
+            <h2 className="text-[18px] font-semibold leading-[26px] tracking-[-0.36px] text-text-primary">5. Tus Derechos</h2>
+            <p>Puedes acceder, actualizar o eliminar la información de tu cuenta en cualquier momento. Puedes solicitar la exportación de tus datos o la eliminación de tu cuenta contactándonos.</p>
           </section>
 
           <section className="space-y-2">
             <h2 className="text-[18px] font-semibold leading-[26px] tracking-[-0.36px] text-text-primary">6. Cookies</h2>
-            <p>We use essential cookies for authentication and session management. No tracking cookies are used for advertising purposes.</p>
+            <p>Usamos cookies esenciales para la autenticación y gestión de sesiones. No se utilizan cookies de rastreo con fines publicitarios.</p>
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-[18px] font-semibold leading-[26px] tracking-[-0.36px] text-text-primary">7. Contact</h2>
-            <p>For privacy inquiries, contact privacy@timetrack.app.</p>
+            <h2 className="text-[18px] font-semibold leading-[26px] tracking-[-0.36px] text-text-primary">7. Contacto</h2>
+            <p>Para consultas de privacidad, contacta a privacy@timetrack.app.</p>
           </section>
         </div>
 
         <div className="border-t border-border pt-6 flex gap-3">
           <Link to="/register">
-            <Button size="md">Back to sign up</Button>
+            <Button size="md">Volver a registrarse</Button>
           </Link>
           <Link to="/terms">
-            <Button variant="secondary" size="md">Terms of Service</Button>
+            <Button variant="secondary" size="md">Términos de Servicio</Button>
           </Link>
         </div>
       </div>
