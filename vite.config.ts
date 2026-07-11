@@ -13,6 +13,22 @@ export default defineConfig(({ mode }) => {
       VitePWA({
         registerType: "autoUpdate",
         includeAssets: ["icons/*.png"],
+        workbox: {
+          skipWaiting: true,
+          clientsClaim: true,
+          globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+          globIgnores: ["index.html"], // nunca cachear index.html en SW
+          runtimeCaching: [
+            {
+              urlPattern: /\/index\.html$/,
+              handler: "NetworkFirst",
+              options: {
+                cacheName: "html-cache",
+                expiration: { maxEntries: 1, maxAgeSeconds: 60 },
+              },
+            },
+          ],
+        },
         manifest: {
           name: "Time Track",
           short_name: "TimeTrack",

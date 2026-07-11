@@ -3,7 +3,31 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
+    # ── SPAs: siempre servir index.html para rutas no encontradas ──
     location / {
         try_files $uri $uri/ /index.html;
+    }
+
+    # ── index.html y service worker: NUNCA cachear ──
+    location = /index.html {
+        add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+        add_header Pragma "no-cache" always;
+        add_header Expires "0" always;
+    }
+
+    location = /sw.js {
+        add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+        add_header Pragma "no-cache" always;
+        add_header Expires "0" always;
+    }
+
+    location = /manifest.json {
+        add_header Cache-Control "no-cache" always;
+    }
+
+    # ── Assets con hash (JS, CSS, fonts, imágenes): cache inmutable por 1 año ──
+    location ~* \.(?:js|css|woff2?|png|svg|ico)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable" always;
     }
 }
