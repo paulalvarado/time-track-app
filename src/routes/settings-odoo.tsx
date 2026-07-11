@@ -21,7 +21,7 @@ function SettingsOdooPage() {
   const [hasConfig, setHasConfig] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
   const [copied, setCopied] = useState(false);
-  const copyTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const url = "https://erp.web-informatica.com";
   const dbName = "bitnami_odoo";

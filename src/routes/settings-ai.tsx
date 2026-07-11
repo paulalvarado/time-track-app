@@ -67,7 +67,7 @@ function SettingsAiPage() {
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [copied, setCopied] = useState(false);
-  const copyTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Load existing config
   useEffect(() => {
     fetch("/api/odoo/config")
