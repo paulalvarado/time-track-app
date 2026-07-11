@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { RouterProvider } from "@tanstack/react-router";
 import { router } from "./router";
+import { DarkModeProvider } from "./lib/use-dark-mode";
 import "./index.css";
 
 // ── Interceptor global de fetch ────────────────────────────────────────
@@ -30,5 +31,7 @@ import "./index.css";
 // ────────────────────────────────────────────────────────────────────────
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
+  <DarkModeProvider>
     <RouterProvider router={router} />
+  </DarkModeProvider>
 );

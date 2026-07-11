@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { OverlayScrollbarsComponent } from "overlayscrollbars-react";
 import "overlayscrollbars/overlayscrollbars.css";
 import { useDarkMode } from "../../lib/use-dark-mode";
@@ -13,20 +13,16 @@ type ScrollAreaProps = {
 export function ScrollArea({ children, className = "", style, options }: ScrollAreaProps) {
   const { isDark } = useDarkMode();
 
-  const baseScrollbars = {
-    theme: isDark ? "os-theme-light" : "os-theme-dark",
-    autoHide: "scroll",
-    autoHideDelay: 600,
-    clickScroll: true,
-  };
-
-  const mergedOptions = {
+  const mergedOptions = useMemo(() => ({
     ...options,
     scrollbars: {
-      ...baseScrollbars,
+      theme: isDark ? "os-theme-light" : "os-theme-dark",
+      autoHide: "scroll",
+      autoHideDelay: 600,
+      clickScroll: true,
       ...(options?.scrollbars || {}),
     },
-  };
+  }), [isDark, options]);
 
   return (
     <OverlayScrollbarsComponent

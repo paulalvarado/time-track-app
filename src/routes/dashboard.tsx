@@ -1,6 +1,6 @@
 import { createRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Route as rootRoute } from "./__root";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button, Card, Dialog, DialogHeader, DialogBody, DialogFooter, useDialog, SelectMenu, Label } from "../components/ui";
 import { useDarkMode } from "../lib/use-dark-mode";
 
@@ -93,9 +93,7 @@ function DashboardPage() {
 
   const [tsLoading, setTsLoading] = useState(false);
   const [tsFetching, setTsFetching] = useState(false);
-  const [period, setPeriod] = useState("year");
-  const periodRefs = useRef<Record<string, HTMLButtonElement | null>>({});
-  const [periodIndicator, setPeriodIndicator] = useState({ left: 0, width: 0 });
+  const [period, setPeriod] = useState("week");
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -124,13 +122,20 @@ function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    // Fetch KPI employee ID from user metadata
-    fetch("/api/user/metadata/kpi_employee_id")
+    // Fetch KPI employee ID and period from user metadata
+    fetch("/api/user/metadata")
       .then(async (res) => {
         if (!res.ok) return;
         const data = await res.json();
-        if (data.value && data.value.employeeOdooId) {
-          setSavedEmployeeOdooId(data.value.employeeOdooId);
+        if (data.metadata) {
+          const kpiVal = data.metadata.kpi_employee_id;
+          if (kpiVal && kpiVal.employeeOdooId) {
+            setSavedEmployeeOdooId(kpiVal.employeeOdooId);
+          }
+          const savedPeriod = data.metadata.kpi_period;
+          if (savedPeriod && ["day", "week", "month", "year"].includes(savedPeriod)) {
+            setPeriod(savedPeriod);
+          }
         }
       })
       .catch(() => {});
@@ -174,25 +179,34 @@ function DashboardPage() {
     navigate({ to: "/login" });
   };
 
-  const handlePeriodChange = useCallback((p: string) => {
-    setPeriod(p);
-    const el = periodRefs.current[p];
-    if (el && el.parentElement) {
-      const parent = el.parentElement.getBoundingClientRect();
-      const rect = el.getBoundingClientRect();
-      setPeriodIndicator({ left: rect.left - parent.left, width: rect.width });
-    }
-  }, []);
+  // Refs para el indicador y los botones
+  const indicatorRef = useRef<HTMLDivElement>(null);
+  const btnRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
-  // Init indicator position on mount / when period changes from outside
+  // Mover indicador al botón activo
+  function positionIndicator(p: string) {
+    const indicator = indicatorRef.current;
+    const btn = btnRefs.current[p];
+    if (!indicator || !btn?.parentElement) return;
+    const cr = btn.parentElement.getBoundingClientRect();
+    const br = btn.getBoundingClientRect();
+    indicator.style.left = (br.left - cr.left) + 'px';
+    indicator.style.width = br.width + 'px';
+  }
+
+  // Efecto: siempre que cambie el período, mover indicador
   useEffect(() => {
-    const el = periodRefs.current[period];
-    if (el && el.parentElement) {
-      const parent = el.parentElement.getBoundingClientRect();
-      const rect = el.getBoundingClientRect();
-      setPeriodIndicator({ left: rect.left - parent.left, width: rect.width });
-    }
-  }, [period]);
+    positionIndicator(period);
+  });
+
+  const handlePeriodChange = (p: string) => {
+    setPeriod(p);
+    fetch("/api/user/metadata/kpi_period", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ value: p }),
+    }).catch(() => {});
+  };
 
   const handleOpenTimesheet = async () => {
     setSelectedEmployeeId("");
@@ -279,17 +293,14 @@ function DashboardPage() {
         <div className="relative inline-flex rounded-[8px] bg-surface p-0.5" style={{ fontVariantNumeric: "tabular-nums" }}>
           {/* Sliding indicator */}
           <div
+            ref={indicatorRef}
             className="absolute top-0.5 bottom-0.5 rounded-[6px] bg-card transition-all duration-200 ease-out"
-            style={{
-              left: `${periodIndicator.left}px`,
-              width: `${periodIndicator.width}px`,
-              boxShadow: "0 0 0 1px rgba(255,255,255,0.06)",
-            }}
+            style={{ boxShadow: "0 0 0 1px rgba(255,255,255,0.06)" }}
           />
           {["day", "week", "month", "year"].map((p) => (
             <button
               key={p}
-              ref={(el) => { periodRefs.current[p] = el; }}
+              ref={(el) => { btnRefs.current[p] = el; }}
               type="button"
               onClick={() => handlePeriodChange(p)}
               className={`relative z-10 px-3 py-1.5 text-[13px] font-medium leading-[18px] transition-colors duration-150 cursor-pointer ${
