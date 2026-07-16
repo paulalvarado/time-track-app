@@ -1,7 +1,7 @@
 import { createRoute, useNavigate, Link } from "@tanstack/react-router";
 import { Route as rootRoute } from "./__root";
 import { useState, useEffect, useRef } from "react";
-import { Button } from "../components/ui";
+import { Button, SelectMenu } from "../components/ui";
 import { Breadcrumb } from "../components/breadcrumb";
 
 export const Route = createRoute({
@@ -29,13 +29,27 @@ function getProjectColor(color?: number | null): string {
   return ODOO_COLORS[color] || "var(--c-border)";
 }
 
+type ProjectUser = {
+  odooUserId: number;
+  name: string;
+};
+
 function ProjectsPage() {
   const navigate = useNavigate();
-  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+  const [user, setUser] = useState<{ name: string; email: string; isAdmin?: boolean } | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [projectUsers, setProjectUsers] = useState<ProjectUser[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
   const lastSyncRef = useRef<string | null>(null);
+
+  const fetchProjects = async (odooUserId?: string) => {
+    const params = odooUserId ? `?odooUserId=${odooUserId}` : "";
+    const res = await fetch(`/api/sync/projects${params}`);
+    if (!res.ok) throw new Error("Unauthorized");
+    return res.json();
+  };
 
   useEffect(() => {
     // Initial load of user + projects
@@ -46,12 +60,21 @@ function ProjectsPage() {
         const userData = await userRes.json();
         setUser(userData.user);
 
-        const projRes = await fetch("/api/sync/projects");
-        if (!projRes.ok) throw new Error("Unauthorized");
-        const projData = await projRes.json();
+        const projData = await fetchProjects();
         setProjects(projData.projects || []);
         setSyncing(projData.syncing || false);
         if (projData.lastSyncAt) lastSyncRef.current = projData.lastSyncAt;
+
+        // If admin, fetch project users for filter
+        if (userData.user?.isAdmin) {
+          try {
+            const usersRes = await fetch("/api/sync/project-users");
+            if (usersRes.ok) {
+              const usersData = await usersRes.json();
+              setProjectUsers(usersData.users || []);
+            }
+          } catch {}
+        }
       } catch {
         navigate({ to: "/login" });
       } finally {
@@ -60,11 +83,12 @@ function ProjectsPage() {
     };
     loadInitial();
 
-    // Poll every 10s for changes
+    // Poll every 10s for changes (only when no filter active)
     const interval = setInterval(async () => {
       try {
-        const since = lastSyncRef.current ? `?since=${encodeURIComponent(lastSyncRef.current)}` : "";
-        const res = await fetch(`/api/sync/projects${since}`);
+        const since = lastSyncRef.current ? `since=${encodeURIComponent(lastSyncRef.current)}` : "";
+        const params = since ? `?${since}` : "";
+        const res = await fetch(`/api/sync/projects${params}`);
         if (!res.ok) return;
         const data = await res.json();
 
@@ -87,6 +111,19 @@ function ProjectsPage() {
 
     return () => clearInterval(interval);
   }, [navigate]);
+
+  const handleFilterChange = async (value: string) => {
+    setSelectedUserId(value);
+    try {
+      setLoading(true);
+      const projData = await fetchProjects(value || undefined);
+      setProjects(projData.projects || []);
+      setSyncing(projData.syncing || false);
+      if (projData.lastSyncAt) lastSyncRef.current = projData.lastSyncAt;
+    } catch {} finally {
+      setLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -124,6 +161,19 @@ function ProjectsPage() {
                 : "Aún no hay proyectos sincronizados."}
             </p>
           </div>
+          {user?.isAdmin && projectUsers.length > 0 && (
+            <div className="w-[200px]">
+              <SelectMenu
+                options={[
+                  { value: "", label: "Todos los empleados" },
+                  ...projectUsers.map((u) => ({ value: String(u.odooUserId), label: u.name })),
+                ]}
+                value={selectedUserId}
+                onChange={handleFilterChange}
+                placeholder="Filtrar por empleado"
+              />
+            </div>
+          )}
         </div>
 
         {projects.length === 0 ? (
