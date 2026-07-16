@@ -18,7 +18,7 @@ function LogoSvg({ size = 24 }: { size?: number }) {
 export function AppHeader() {
   const navigate = useNavigate();
   const { isDark, toggle: toggleDark } = useDarkMode();
-  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+  const [user, setUser] = useState<{ name: string; email: string; isAdmin?: boolean } | null>(null);
   const [showLogout, setShowLogout] = useState(false);
 
   useEffect(() => {
@@ -47,6 +47,11 @@ export function AppHeader() {
           </Link>
         </div>
         <div className="flex items-center gap-3">
+          {user?.isAdmin && (
+            <Link to="/admin" className="text-[14px] leading-[20px] text-text-secondary hover:text-text-primary no-underline">
+              Admin
+            </Link>
+          )}
           <Link to="/settings" className="text-[14px] leading-[20px] text-text-secondary hover:text-text-primary no-underline">
             Configuración
           </Link>

@@ -1,6 +1,6 @@
 import { createRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Route as rootRoute } from "./__root";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button, Input, Label } from "../components/ui";
 
 export const Route = createRoute({
@@ -24,7 +24,11 @@ function LogoSvg() {
 
 function LoginPage() {
   const navigate = useNavigate();
-  const [username, setUsername] = useState("");
+  const isAdminLogin = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("r") === "admin";
+  }, []);
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -35,11 +39,15 @@ function LoginPage() {
     setError("");
     setLoading(true);
 
+    const emailToSend = isAdminLogin
+      ? email
+      : `${email}@web-informatica.com`;
+
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: `${username}@web-informatica.com`, password }),
+        body: JSON.stringify({ email: emailToSend, password }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -63,30 +71,55 @@ function LoginPage() {
           <span className="text-[18px] font-semibold leading-[24px] tracking-[-0.36px] text-text-primary">Time Track</span>
         </div>
 
-        <h1 className="text-[24px] font-semibold leading-[32px] tracking-[-0.96px] text-text-primary">
-          Iniciar sesión.
-        </h1>
+        <div className="flex items-center gap-2 mb-1">
+          <h1 className="text-[24px] font-semibold leading-[32px] tracking-[-0.96px] text-text-primary">
+            {isAdminLogin ? "Admin." : "Iniciar sesión."}
+          </h1>
+          {isAdminLogin && (
+            <span className="rounded-[4px] bg-accent/10 border border-accent/20 px-1.5 py-0.5 text-[11px] font-medium text-accent leading-[14px]">
+              admin
+            </span>
+          )}
+        </div>
         <p className="mt-1 text-[14px] leading-[20px] text-text-secondary">
-          Ingresa tus credenciales para continuar.
+          {isAdminLogin
+            ? "Ingresa tu correo completo y contraseña de administrador."
+            : "Ingresa tus credenciales para continuar."}
         </p>
 
         <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
           <div>
-            <Label>Usuario</Label>
-            <Input
-              type="text"
-              placeholder="tu.usuario"
-              value={username}
-              onChange={(e) => setUsername(e.target.value.replace(/\s/g, ""))}
-              suffix="@web-informatica.com"
-              leadingIcon={
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
-                </svg>
-              }
-              wrapperClassName="max-w-full"
-              required
-            />
+            <Label>{isAdminLogin ? "Correo electrónico" : "Usuario"}</Label>
+            {isAdminLogin ? (
+              <Input
+                type="email"
+                placeholder="admin@timetrack.app"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                leadingIcon={
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+                  </svg>
+                }
+                wrapperClassName="max-w-full"
+                required
+              />
+            ) : (
+              <Input
+                type="text"
+                placeholder="tu.usuario"
+                value={email}
+                onChange={(e) => setEmail(e.target.value.replace(/\s/g, ""))}
+                suffix="@web-informatica.com"
+                leadingIcon={
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                  </svg>
+                }
+                wrapperClassName="max-w-full"
+                required
+              />
+            )}
           </div>
 
           <div>
@@ -125,12 +158,20 @@ function LoginPage() {
           </Button>
         </form>
 
-        <p className="mt-6 text-center text-[14px] leading-[20px] text-text-secondary">
-          ¿No tienes cuenta?{" "}
-          <Link to="/register" className="text-accent hover:underline font-medium">
-            Regístrate
-          </Link>
-        </p>
+        {isAdminLogin ? (
+          <p className="mt-6 text-center text-[14px] leading-[20px] text-text-secondary">
+            <Link to="/login" className="text-accent hover:underline font-medium">
+              Volver al inicio de sesión de usuario
+            </Link>
+          </p>
+        ) : (
+          <p className="mt-6 text-center text-[14px] leading-[20px] text-text-secondary">
+            ¿No tienes cuenta?{" "}
+            <Link to="/register" className="text-accent hover:underline font-medium">
+              Regístrate
+            </Link>
+          </p>
+        )}
       </div>
     </main>
   );

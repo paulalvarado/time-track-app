@@ -16,6 +16,7 @@ import { Route as formsRoute } from "./routes/forms";
 import { Route as dialogsRoute } from "./routes/dialogs";
 import { Route as termsRoute } from "./routes/terms";
 import { Route as privacyRoute } from "./routes/privacy";
+import { Route as adminRoute } from "./routes/admin";
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
@@ -31,6 +32,7 @@ const routeTree = rootRoute.addChildren([
   projectTasksRoute,
   taskDetailRoute,
   taskDetailTimesheetRoute,
+  adminRoute,
   designSystemRoute,
   formsRoute,
   dialogsRoute,
