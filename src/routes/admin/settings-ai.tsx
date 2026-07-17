@@ -198,6 +198,11 @@ function AdminSettingsAiPage() {
     }
   };
 
+  useSetBreadcrumb([
+    { label: "Configuración", to: "/admin/settings" },
+    { label: "IA" },
+  ]);
+
   if (checking) {
     return (
       <main className="min-h-screen bg-page flex items-center justify-center">
@@ -213,11 +218,6 @@ function AdminSettingsAiPage() {
   }
 
   const selectedProvider = PROVIDERS.find((p) => p.id === provider);
-
-  useSetBreadcrumb([
-    { label: "Configuración", to: "/admin/settings" },
-    { label: "IA" },
-  ]);
 
   return (
     <>

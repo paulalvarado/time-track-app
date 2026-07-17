@@ -108,6 +108,11 @@ function AdminSettingsOdooPage() {
     }
   };
 
+  useSetBreadcrumb([
+    { label: "Configuración", to: "/admin/settings" },
+    { label: "Conexión Odoo" },
+  ]);
+
   if (checking) {
     return (
       <main className="min-h-screen bg-page flex items-center justify-center">
@@ -121,11 +126,6 @@ function AdminSettingsOdooPage() {
       </main>
     );
   }
-
-  useSetBreadcrumb([
-    { label: "Configuración", to: "/admin/settings" },
-    { label: "Conexión Odoo" },
-  ]);
 
   return (
     <>

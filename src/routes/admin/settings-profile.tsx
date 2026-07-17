@@ -91,6 +91,11 @@ function AdminSettingsProfilePage() {
     }
   };
 
+  useSetBreadcrumb([
+    { label: "Configuración", to: "/admin/settings" },
+    { label: "Perfil" },
+  ]);
+
   if (checking) {
     return (
       <main className="min-h-screen bg-page flex items-center justify-center">
@@ -104,11 +109,6 @@ function AdminSettingsProfilePage() {
       </main>
     );
   }
-
-  useSetBreadcrumb([
-    { label: "Configuración", to: "/admin/settings" },
-    { label: "Perfil" },
-  ]);
 
   return (
     <>
