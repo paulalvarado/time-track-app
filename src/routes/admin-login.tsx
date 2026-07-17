@@ -1,12 +1,12 @@
 import { createRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button, Input, Label } from "../components/ui";
 import { Route as publicLayout } from "../layouts/public-layout";
 
 export const Route = createRoute({
   getParentRoute: () => publicLayout,
-  path: "/login",
-  component: LoginPage,
+  path: "/admin/login",
+  component: AdminLoginPage,
 });
 
 function LogoSvg() {
@@ -22,13 +22,28 @@ function LogoSvg() {
   );
 }
 
-function LoginPage() {
+function AdminLoginPage() {
   const navigate = useNavigate();
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
+
+  // Si ya está autenticado como admin, redirigir al panel
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Unauthorized");
+        const data = await res.json();
+        if (data.user?.isAdmin) {
+          navigate({ to: "/admin/dashboard" });
+        }
+      })
+      .catch(() => {})
+      .finally(() => setChecking(false));
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,11 +54,15 @@ function LoginPage() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: `${username}@web-informatica.com`, password }),
+        body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || "Inicio de sesión fallido");
+        return;
+      }
+      if (!data.user?.isAdmin) {
+        setError("Este acceso es solo para administradores.");
         return;
       }
       sessionStorage.setItem("welcome", "true");
@@ -55,6 +74,14 @@ function LoginPage() {
     }
   };
 
+  if (checking) {
+    return (
+      <main className="min-h-screen bg-page flex items-center justify-center p-4">
+        <div className="text-text-secondary text-[14px]">Verificando sesión...</div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-page flex items-center justify-center p-4">
       <div className="w-full max-w-sm rounded-[12px] border border-border bg-card p-8 shadow-[0px_2px_2px_#0000000a,0px_8px_16px_-4px_#0000000a,0_0_0_1px_#00000014_inset]">
@@ -63,25 +90,29 @@ function LoginPage() {
           <span className="text-[18px] font-semibold leading-[24px] tracking-[-0.36px] text-text-primary">Time Track</span>
         </div>
 
-        <h1 className="text-[24px] font-semibold leading-[32px] tracking-[-0.96px] text-text-primary">
-          Iniciar sesión.
-        </h1>
+        <div className="flex items-center gap-2 mb-1">
+          <h1 className="text-[24px] font-semibold leading-[32px] tracking-[-0.96px] text-text-primary">
+            Admin.
+          </h1>
+          <span className="rounded-[4px] bg-accent/10 border border-accent/20 px-1.5 py-0.5 text-[11px] font-medium text-accent leading-[14px]">
+            admin
+          </span>
+        </div>
         <p className="mt-1 text-[14px] leading-[20px] text-text-secondary">
-          Ingresa tus credenciales para continuar.
+          Ingresa tu correo completo y contraseña de administrador.
         </p>
 
         <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
           <div>
-            <Label>Usuario</Label>
+            <Label>Correo electrónico</Label>
             <Input
-              type="text"
-              placeholder="tu.usuario"
-              value={username}
-              onChange={(e) => setUsername(e.target.value.replace(/\s/g, ""))}
-              suffix="@web-informatica.com"
+              type="email"
+              placeholder="admin@timetrack.app"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               leadingIcon={
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
                 </svg>
               }
               wrapperClassName="max-w-full"
@@ -121,14 +152,13 @@ function LoginPage() {
           )}
 
           <Button type="submit" size="md" className="w-full" disabled={loading}>
-            {loading ? "Iniciando sesión..." : "Iniciar sesión"}
+            {loading ? "Iniciando sesión..." : "Acceder al panel"}
           </Button>
         </form>
 
         <p className="mt-6 text-center text-[14px] leading-[20px] text-text-secondary">
-          ¿No tienes cuenta?{" "}
-          <Link to="/register" className="text-accent hover:underline font-medium">
-            Regístrate
+          <Link to="/login" className="text-accent hover:underline font-medium">
+            Volver al inicio de sesión de usuario
           </Link>
         </p>
       </div>

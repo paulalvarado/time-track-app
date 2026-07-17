@@ -1,10 +1,10 @@
 import { createRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Route as rootRoute } from "./__root";
 import { useState, useEffect } from "react";
 import { Button } from "../components/ui";
+import { Route as publicLayout } from "../layouts/public-layout";
 
 export const Route = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => publicLayout,
   path: "/",
   component: HomePage,
 });
@@ -66,6 +66,8 @@ function HomePage() {
         const u = data.user;
         if (u && !u.hasOdooConfig) {
           navigate({ to: "/settings" });
+        } else if (u?.isAdmin) {
+          navigate({ to: "/admin/dashboard" });
         } else {
           navigate({ to: "/dashboard" });
         }

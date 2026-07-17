@@ -1,8 +1,8 @@
 import { createRoute } from "@tanstack/react-router";
-import { Route as rootRoute } from "./__root";
+import { Route as publicLayout } from "../layouts/public-layout";
 
 export const Route = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => publicLayout,
   path: "/design-system",
   component: SystemDesignView,
 });
@@ -130,8 +130,7 @@ function RadiusSample({ token, px, value }: { token: string; px: string; value: 
 function SystemDesignView() {
   return (
     <main className="min-h-screen bg-page">
-      {/* Header */}
-      <header className="border-b border-border bg-card">
+      <div className="border-b border-border bg-card">
         <div className="mx-auto max-w-[1200px] px-6 py-6">
           <div className="flex items-center justify-between">
             <div>
@@ -172,7 +171,7 @@ function SystemDesignView() {
             </div>
           </div>
         </div>
-      </header>
+      </div>
 
       <div className="mx-auto max-w-[1200px] px-6 py-10 space-y-16">
         {/* ─── 1. COLORS ─── */}

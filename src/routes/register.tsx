@@ -1,10 +1,10 @@
 import { createRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Route as rootRoute } from "./__root";
 import { useState } from "react";
 import { Button, Input, Label, Checkbox, PasswordRequirements } from "../components/ui";
+import { Route as publicLayout } from "../layouts/public-layout";
 
 export const Route = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => publicLayout,
   path: "/register",
   component: RegisterPage,
 });
@@ -69,7 +69,7 @@ function RegisterPage() {
       }
       sessionStorage.setItem("welcome", "true");
       setSuccess(true);
-      setTimeout(() => navigate({ to: "/dashboard" }), 1800);
+      setTimeout(() => navigate({ to: "/admin/dashboard" }), 1800);
     } catch {
       setError("Error de conexión. Intenta de nuevo.");
     } finally {

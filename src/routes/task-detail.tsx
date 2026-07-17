@@ -1,19 +1,19 @@
 import { createRoute, useNavigate, Link, useLocation } from "@tanstack/react-router";
-import { Route as rootRoute } from "./__root";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Button, Dropdown, DropdownItem, DropdownDivider, Dialog, DialogHeader, DialogBody, DialogFooter, useDialog, Input, Label, DatePicker, NumberInput, SelectMenu, Textarea, Tooltip } from "../components/ui";
 import { Breadcrumb } from "../components/breadcrumb";
 import { useCatalog, type CatalogItem } from "../lib/use-catalog";
 import { useDarkMode } from "../lib/use-dark-mode";
+import { Route as authLayout } from "../layouts/auth-layout";
 
 export const Route = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => authLayout,
   path: "/projects/$projectId/tasks/$taskId",
   component: TaskDetailPage,
 });
 
 export const TimesheetRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => authLayout,
   path: "/projects/$projectId/tasks/$taskId/timesheet",
   component: TaskDetailPage,
 });

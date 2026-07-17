@@ -27,9 +27,9 @@ export function Dropdown({ trigger, children, align = "start", className = "" }:
 
   return (
     <div ref={ref} className={`relative inline-block ${className}`}>
-      <button type="button" onClick={() => setOpen(!open)} className="w-full">
+      <div onClick={() => setOpen(!open)} className="cursor-pointer">
         {trigger}
-      </button>
+      </div>
       {open && (
         <div
           className={`absolute z-50 mt-1.5 w-48 origin-top-${

@@ -1,9 +1,9 @@
 import { createRoute, Link } from "@tanstack/react-router";
-import { Route as rootRoute } from "./__root";
 import { Button } from "../components/ui";
+import { Route as publicLayout } from "../layouts/public-layout";
 
 export const Route = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => publicLayout,
   path: "/terms",
   component: TermsPage,
 });
@@ -11,24 +11,6 @@ export const Route = createRoute({
 function TermsPage() {
   return (
     <main className="min-h-screen bg-page">
-      <header className="border-b border-border bg-card">
-        <div className="mx-auto max-w-[760px] px-6 py-6 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <svg width="24" height="24" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="14" cy="14" r="12" stroke="currentColor" strokeWidth="2" fill="currentColor" />
-              <circle cx="14" cy="14" r="2" fill="currentColor" />
-              <line x1="14" y1="4" x2="14" y2="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              <line x1="14" y1="14" x2="20" y2="14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              <line x1="14" y1="14" x2="14" y2="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-            <span className="text-[16px] font-semibold text-text-primary">Time Track</span>
-          </div>
-          <Link to="/register" className="inline-flex h-[28px] items-center rounded-[6px] bg-[#171717] px-2 text-[14px] font-medium leading-[20px] text-[#ffffff] no-underline">
-            Registrarse
-          </Link>
-        </div>
-      </header>
-
       <div className="mx-auto max-w-[640px] px-6 py-12 space-y-8">
         <div>
           <h1 className="text-[32px] font-semibold leading-[40px] tracking-[-1.28px] text-text-primary">

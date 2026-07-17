@@ -41,16 +41,21 @@ export function AppHeader() {
     <header className="border-b border-border bg-card">
       <div className="mx-auto max-w-[1200px] px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Link to="/dashboard" className="flex items-center gap-2 no-underline">
+          <Link to="/admin/dashboard" className="flex items-center gap-2 no-underline">
             <LogoSvg />
             <span className="text-[16px] font-semibold text-text-primary">Time Track</span>
           </Link>
         </div>
         <div className="flex items-center gap-3">
           {user?.isAdmin && (
-            <Link to="/admin" className="text-[14px] leading-[20px] text-text-secondary hover:text-text-primary no-underline">
-              Admin
-            </Link>
+            <>
+              <Link to="/admin/users" className="text-[14px] leading-[20px] text-text-secondary hover:text-text-primary no-underline">
+                Usuarios
+              </Link>
+              <Link to="/admin/roles" className="text-[14px] leading-[20px] text-text-secondary hover:text-text-primary no-underline">
+                Roles
+              </Link>
+            </>
           )}
           <Link to="/settings" className="text-[14px] leading-[20px] text-text-secondary hover:text-text-primary no-underline">
             Configuración

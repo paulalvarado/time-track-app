@@ -1,6 +1,6 @@
 import { createRoute, Link } from "@tanstack/react-router";
-import { Route as rootRoute } from "./__root";
 import { useState } from "react";
+import { Route as publicLayout } from "../layouts/public-layout";
 import {
   Button,
   Input,
@@ -19,7 +19,7 @@ import {
 } from "../components/ui";
 
 export const Route = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => publicLayout,
   path: "/forms",
   component: FormsView,
 });
@@ -91,8 +91,7 @@ function FormsView() {
 
   return (
     <main className="min-h-screen bg-page">
-      {/* Header */}
-      <header className="border-b border-border bg-card">
+      <div className="border-b border-border bg-card">
         <div className="mx-auto max-w-[1200px] px-6 py-6">
           <div className="flex items-center justify-between">
             <div>
@@ -121,7 +120,7 @@ function FormsView() {
             </div>
           </div>
         </div>
-      </header>
+      </div>
 
       <div className="mx-auto max-w-[1200px] px-6 py-10 space-y-16">
         {/* ─── 1. INPUTS ─── */}

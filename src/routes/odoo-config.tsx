@@ -85,7 +85,7 @@ function OdooConfigPage() {
         setError(data.error || "Failed to save configuration");
         return;
       }
-      navigate({ to: "/dashboard" });
+      navigate({ to: "/admin/dashboard" });
     } catch {
       setError("Connection error. Please try again.");
     } finally {
@@ -112,12 +112,12 @@ function OdooConfigPage() {
       {/* Header */}
       <header className="border-b border-border bg-card">
         <div className="mx-auto max-w-[1200px] px-6 h-16 flex items-center justify-between">
-          <Link to="/dashboard" className="flex items-center gap-2 no-underline">
+          <Link to="/admin/dashboard" className="flex items-center gap-2 no-underline">
             <LogoSvg />
             <span className="text-[16px] font-semibold text-text-primary">Time Track</span>
           </Link>
           <div className="flex items-center gap-3">
-            <Link to="/dashboard" className="text-[14px] leading-[20px] text-text-secondary hover:text-text-primary no-underline">
+            <Link to="/admin/dashboard" className="text-[14px] leading-[20px] text-text-secondary hover:text-text-primary no-underline">
               Dashboard
             </Link>
             {user && (

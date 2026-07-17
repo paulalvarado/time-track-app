@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 
 type Crumb = {
   label: string;
@@ -7,7 +7,10 @@ type Crumb = {
 };
 
 export function Breadcrumb({ items }: { items: Crumb[] }) {
-  const all = [{ label: "Dashboard", to: "/dashboard" }, ...items];
+  const location = useLocation();
+  const isAdminPath = location.pathname.startsWith("/admin/");
+  const dashboardTo = isAdminPath ? "/admin/dashboard" : "/dashboard";
+  const all = [{ label: "Dashboard", to: dashboardTo }, ...items];
 
   return (
     <div className="mx-auto max-w-[1200px] px-6 py-4 min-w-0">

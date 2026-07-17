@@ -1,6 +1,6 @@
 import { createRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
-import { Route as rootRoute } from "./__root";
 import { Breadcrumb } from "../components/breadcrumb";
+import { Route as authLayout } from "../layouts/auth-layout";
 
 
 const sections = [
@@ -10,7 +10,7 @@ const sections = [
 ] as const;
 
 export const Route = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => authLayout,
   path: "/settings",
   component: SettingsLayout,
 });
