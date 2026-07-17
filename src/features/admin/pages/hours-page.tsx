@@ -200,7 +200,7 @@ export function HoursPage() {
 
   return (
     <main className="min-h-screen bg-page overflow-x-hidden">
-      <div className="w-full max-w-full px-6 py-8 space-y-8">
+      <div className="mx-auto max-w-[1200px] px-6 py-8 space-y-8">
         <PageHeader
           title="Horas."
           description="Todas las partes de horas registradas en el sistema."

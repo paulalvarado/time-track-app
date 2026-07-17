@@ -143,7 +143,7 @@ export function HoursReportPage() {
 
   return (
     <main className="min-h-screen bg-page overflow-x-hidden">
-      <div className="w-full max-w-full px-6 py-8 space-y-6">
+      <div className="mx-auto max-w-[1200px] px-6 py-8 space-y-6">
         <PageHeader
           title="Reporte de partes de horas."
           description="Visualiza y exporta las horas registradas con filtros y agrupaciones."
