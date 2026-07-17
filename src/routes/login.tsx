@@ -75,7 +75,7 @@ function LoginPage() {
             <Label>Usuario</Label>
             <Input
               type="text"
-              placeholder="tu.usuario"
+              placeholder="Ingresa tu usuario"
               value={username}
               onChange={(e) => setUsername(e.target.value.replace(/\s/g, ""))}
               suffix="@web-informatica.com"

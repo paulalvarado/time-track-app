@@ -107,7 +107,7 @@ function AdminLoginPage() {
             <Label>Correo electrónico</Label>
             <Input
               type="email"
-              placeholder="admin@timetrack.app"
+              placeholder="Ingresa tu correo"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               leadingIcon={
