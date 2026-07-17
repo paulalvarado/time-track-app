@@ -1,6 +1,7 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useDarkMode } from "../hooks/use-dark-mode";
 import { LogoSvg } from "./logo";
+import { SyncStatus } from "./sync-status";
 
 type User = { name: string; email: string; isAdmin?: boolean };
 
@@ -194,7 +195,7 @@ export function Sidebar({
         {/* Theme toggle */}
         <button
           onClick={toggleDark}
-          className="flex items-center justify-center w-full px-3 py-2 rounded-[6px] text-text-secondary hover:text-text-primary hover:bg-surface transition-colors cursor-pointer"
+          className="flex items-center justify-start gap-2 w-full px-3 py-2 rounded-[6px] border border-border text-text-secondary hover:text-text-primary hover:bg-surface transition-colors cursor-pointer"
           title={isDark ? "Modo claro" : "Modo oscuro"}
         >
           <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -207,13 +208,29 @@ export function Sidebar({
           )}
         </button>
 
+        {/* Sync status */}
+        <SyncStatus collapsed={collapsed} />
+
         {/* User info + logout */}
-        <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-[6px] hover:bg-surface transition-colors group">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface text-[11px] font-medium text-text-secondary">
-              {user.name.charAt(0).toUpperCase()}
-            </div>
-            {!collapsed && (
+        {collapsed ? (
+          <button
+            onClick={onLogout}
+            title="Cerrar sesión"
+            className="flex items-center justify-center w-full px-3 py-2 rounded-[6px] border border-border text-text-secondary hover:text-danger hover:bg-danger-bg/40 transition-colors cursor-pointer"
+          >
+            <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 9V5.25A2.25 2.25 0 0110.5 3h6a2.25 2.25 0 012.25 2.25v13.5A2.25 2.25 0 0116.5 21h-6a2.25 2.25 0 01-2.25-2.25V15m-3 0l-3-3m0 0l3-3m-3 3H15" />
+            </svg>
+          </button>
+        ) : (
+          <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-[6px] hover:bg-surface transition-colors group">
+            <Link
+              to={user.isAdmin ? "/admin/settings/profile" : "/settings/profile"}
+              className="flex items-center gap-2.5 min-w-0 flex-1 no-underline"
+            >
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface text-[11px] font-medium text-text-secondary">
+                {user.name.charAt(0).toUpperCase()}
+              </div>
               <div className="min-w-0">
                 <p className="text-[13px] font-medium leading-[18px] text-text-primary truncate">
                   {user.name}
@@ -222,18 +239,18 @@ export function Sidebar({
                   {user.email}
                 </p>
               </div>
-            )}
-          </div>
-          <button
-            onClick={onLogout}
-            title="Cerrar sesión"
-            className="shrink-0 flex items-center justify-center h-7 w-7 rounded-[6px] text-text-muted hover:text-danger hover:bg-danger-bg/40 transition-colors cursor-pointer"
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 9V5.25A2.25 2.25 0 0110.5 3h6a2.25 2.25 0 012.25 2.25v13.5A2.25 2.25 0 0116.5 21h-6a2.25 2.25 0 01-2.25-2.25V15m-3 0l-3-3m0 0l3-3m-3 3H15" />
-            </svg>
-          </button>
+            </Link>
+            <button
+              onClick={onLogout}
+              title="Cerrar sesión"
+              className="shrink-0 flex items-center justify-center h-7 w-7 rounded-[6px] text-text-muted hover:text-danger hover:bg-danger-bg/40 transition-colors cursor-pointer"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 9V5.25A2.25 2.25 0 0110.5 3h6a2.25 2.25 0 012.25 2.25v13.5A2.25 2.25 0 0116.5 21h-6a2.25 2.25 0 01-2.25-2.25V15m-3 0l-3-3m0 0l3-3m-3 3H15" />
+              </svg>
+            </button>
         </div>
+      )}
       </div>
     </aside>
   );

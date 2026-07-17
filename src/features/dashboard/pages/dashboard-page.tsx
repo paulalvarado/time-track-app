@@ -2,6 +2,7 @@ import { Link, useNavigate, useLocation } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
 import { Button, Card, Dialog, DialogHeader, DialogBody, DialogFooter, useDialog, SelectMenu, Label } from "../../../components/ui";
 import { useDarkMode } from "../../../hooks/use-dark-mode";
+import { PageHeader } from "../../../components/page-header";
 import { useSetBreadcrumb } from "../../../components/breadcrumb-context";
 
 function StatLoader({ loaded, value }: { loaded: boolean; value: string }) {
@@ -299,24 +300,19 @@ export function DashboardPage() {
       )}
 
       <div className="mx-auto max-w-[1200px] px-6 py-8 space-y-8">
-        {/* Welcome */}
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-[24px] font-semibold leading-[32px] tracking-[-0.96px] text-text-primary">
-              {isAdmin ? "Panel de Administración." : `Bienvenido de nuevo, ${user.name.split(" ")[0]}.`}
-            </h1>
-            {isAdmin && (
-              <span className="rounded-[4px] bg-accent/10 border border-accent/20 px-1.5 py-0.5 text-[11px] font-medium text-accent leading-[14px]">
-                admin
-              </span>
-            )}
-          </div>
-          <p className="mt-1 text-[14px] leading-[20px] text-text-secondary">
-            {isAdmin
-              ? "Resumen global del sistema. Todos los datos provienen de la base local."
-              : "Aquí tienes un resumen de tu actividad."}
-          </p>
-        </div>
+        <PageHeader
+          title={isAdmin ? "Panel de Administración." : `Bienvenido de nuevo, ${user.name.split(" ")[0]}.`}
+          description={isAdmin
+            ? "Resumen global del sistema. Todos los datos provienen de la base local."
+            : "Aquí tienes un resumen de tu actividad."}
+          breadcrumbs={[]}
+        >
+          {isAdmin && (
+            <span className="rounded-[4px] bg-accent/10 border border-accent/20 px-1.5 py-0.5 text-[11px] font-medium text-accent leading-[14px]">
+              admin
+            </span>
+          )}
+        </PageHeader>
 
         {isAdmin ? (
           /* ── Admin Dashboard ── */

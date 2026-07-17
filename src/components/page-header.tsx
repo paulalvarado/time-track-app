@@ -21,7 +21,7 @@ export function PageHeader({ title, description, breadcrumbs, children }: PageHe
           <Breadcrumb items={breadcrumbs} />
         </div>
       )}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-4 mb-6">
         <div className="min-w-0 flex-1">
           <h1 className="text-[24px] font-semibold leading-[32px] tracking-[-0.96px] text-text-primary">
             {title}

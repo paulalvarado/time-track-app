@@ -1,5 +1,5 @@
 import { createRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
-import { Breadcrumb } from "../components/breadcrumb";
+import { PageHeader } from "../components/page-header";
 import { Route as authLayout } from "../layouts/auth-layout";
 
 
@@ -25,16 +25,12 @@ function SettingsLayout() {
 
       {isIndex ? (
         <>
-          <Breadcrumb items={[{ label: "Configuración" }]} />
           <div className="mx-auto max-w-[1200px] px-6 py-8 space-y-8">
-          <div>
-            <h1 className="text-[24px] font-semibold leading-[32px] tracking-[-0.96px] text-text-primary">
-              Configuración.
-            </h1>
-            <p className="mt-1 text-[14px] leading-[20px] text-text-secondary">
-              Administra tu perfil, conexiones y proveedores de IA.
-            </p>
-          </div>
+            <PageHeader
+              title="Configuración."
+              description="Administra tu perfil, conexiones y proveedores de IA."
+              breadcrumbs={[{ label: "Configuración" }]}
+            />
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {sections.map((s) => (
               <Link key={s.key} to={`/settings/${s.key}`} className="block no-underline group h-full">

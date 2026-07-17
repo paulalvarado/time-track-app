@@ -2,7 +2,7 @@ import { createRoute, useNavigate } from "@tanstack/react-router";
 import { Route as settingsLayoutRoute } from "./settings-layout";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button, Input, Label } from "../components/ui";
-import { Breadcrumb } from "../components/breadcrumb";
+import { PageHeader } from "../components/page-header";
 
 export const Route = createRoute({
   getParentRoute: () => settingsLayoutRoute,
@@ -216,15 +216,16 @@ function SettingsAiPage() {
 
   return (
     <>
-      <Breadcrumb items={[{ label: "Configuración", to: "/settings" }, { label: "IA" }]} />
       <div className="mx-auto max-w-[1200px] px-6 py-8">
-      <div className="max-w-lg">
-        <h1 className="text-[24px] font-semibold leading-[32px] tracking-[-0.96px] text-text-primary">
-          Proveedor de IA.
-        </h1>
-        <p className="mt-1 text-[14px] leading-[20px] text-text-secondary">
-          Configura un proveedor de IA para transcripción de voz a texto y otras funciones.
-        </p>
+        <PageHeader
+          title="Proveedor de IA."
+          description="Configura un proveedor de IA para transcripción de voz a texto y otras funciones."
+          breadcrumbs={[
+            { label: "Configuración", to: "/settings" },
+            { label: "IA" },
+          ]}
+        />
+      <div className="max-w-lg mt-8">
 
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
             {/* Provider selector */}

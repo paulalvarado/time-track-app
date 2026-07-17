@@ -2,7 +2,7 @@ import { createRoute, useNavigate } from "@tanstack/react-router";
 import { Route as settingsLayoutRoute } from "./settings-layout";
 import { useState, useEffect } from "react";
 import { Button, Input, Label, PasswordRequirements } from "../components/ui";
-import { Breadcrumb } from "../components/breadcrumb";
+import { PageHeader } from "../components/page-header";
 
 export const Route = createRoute({
   getParentRoute: () => settingsLayoutRoute,
@@ -106,15 +106,16 @@ function SettingsProfilePage() {
 
   return (
     <>
-      <Breadcrumb items={[{ label: "Configuración", to: "/settings" }, { label: "Perfil" }]} />
-      <div className="mx-auto max-w-[1200px] px-6 py-8">
-      <div className="max-w-md">
-        <h1 className="text-[24px] font-semibold leading-[32px] tracking-[-0.96px] text-text-primary">
-          Perfil.
-        </h1>
-        <p className="mt-1 text-[14px] leading-[20px] text-text-secondary">
-          Actualiza tu nombre y cambia tu contraseña.
-        </p>
+<div className="mx-auto max-w-[1200px] px-6 py-8">
+        <PageHeader
+          title="Perfil."
+          description="Actualiza tu nombre y cambia tu contraseña."
+          breadcrumbs={[
+            { label: "Configuración", to: "/settings" },
+            { label: "Perfil" },
+          ]}
+        />
+        <div className="max-w-md mt-8">
 
           <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
             <div>

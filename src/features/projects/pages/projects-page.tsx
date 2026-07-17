@@ -96,7 +96,7 @@ export function ProjectsPage() {
 
   return (
     <main className="min-h-screen bg-page">
-      <div className="mx-auto max-w-[1200px] px-6 py-8">
+      <div className="mx-auto max-w-[1200px] px-6 py-8 space-y-8">
         <PageHeader
           title="Proyectos."
           description={projects.length > 0

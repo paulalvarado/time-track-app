@@ -2,7 +2,7 @@ import { createRoute, useNavigate } from "@tanstack/react-router";
 import { Route as settingsLayoutRoute } from "./settings-layout";
 import { useState, useEffect, useRef } from "react";
 import { Button, Input, Label } from "../components/ui";
-import { Breadcrumb } from "../components/breadcrumb";
+import { PageHeader } from "../components/page-header";
 
 export const Route = createRoute({
   getParentRoute: () => settingsLayoutRoute,
@@ -123,17 +123,18 @@ function SettingsOdooPage() {
 
   return (
     <>
-      <Breadcrumb items={[{ label: "Configuración", to: "/settings" }, { label: "Conexión Odoo" }]} />
-      <div className="mx-auto max-w-[1200px] px-6 py-8">
-      <div className="max-w-md">
-        <h1 className="text-[24px] font-semibold leading-[32px] tracking-[-0.96px] text-text-primary">
-          Conexión Odoo.
-        </h1>
-        <p className="mt-1 text-[14px] leading-[20px] text-text-secondary">
-          {hasConfig
+<div className="mx-auto max-w-[1200px] px-6 py-8">
+        <PageHeader
+          title="Conexión Odoo."
+          description={hasConfig
             ? "Actualiza tu conexión con Odoo."
             : "Configura tu instancia de Odoo para empezar a registrar tiempo."}
-        </p>
+          breadcrumbs={[
+            { label: "Configuración", to: "/settings" },
+            { label: "Conexión Odoo" },
+          ]}
+        />
+        <div className="max-w-md mt-8">
 
           <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
             <div>

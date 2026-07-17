@@ -360,7 +360,7 @@ export function ProjectTasksPage() {
     <main className="min-h-screen max-h-screen overflow-hidden bg-page">
 
 
-      <div className="mx-auto max-w-[1200px] px-6 py-4 min-w-0">
+      <div className="mx-auto max-w-[1200px] px-6 pt-8">
         <PageHeader
           title={projectName}
           description={`${tasks.length} tarea${tasks.length === 1 ? "" : "s"}`}
@@ -385,7 +385,7 @@ export function ProjectTasksPage() {
           </div>
         </div>
       ) : (
-        <div className="mx-auto max-w-[1200px] px-6 pb-8" style={{ height: "calc(100vh - 180px)" }}>
+        <div className="mx-auto max-w-[1200px] px-6 pb-8" style={{ height: "calc(100vh - 212px)" }}>
           <ScrollArea style={{ width: "100%", height: "100%" }} options={{ scrollbars: { autoHide: "never" } }}>
             <div className="flex gap-4 min-w-max h-full">
           {stages.length === 0 && tasks.length === 0 ? (
