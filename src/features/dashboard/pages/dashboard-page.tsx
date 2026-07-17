@@ -490,7 +490,7 @@ export function DashboardPage() {
               <h2 className="text-[18px] font-semibold leading-[26px] tracking-[-0.36px] text-text-primary mb-4">
                 Actividad reciente.
               </h2>
-              <Card variant="ghost" className="text-center py-8">
+              <Card variant="soft" className="text-center py-8">
                 <div className="flex flex-col items-center gap-2">
                   <svg className="h-8 w-8 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
@@ -514,14 +514,16 @@ export function DashboardPage() {
           {tsLoading ? (
             <p className="text-text-secondary text-[14px]">Cargando empleados...</p>
           ) : (
-            <SelectMenu
-              label="Empleado"
-              placeholder="Selecciona un empleado..."
-              options={employees.map((e) => ({ value: String(e.id), label: e.name }))}
-              value={effectiveEmployeeId}
-              onChange={handleEmployeeChange}
-              disabled={tsFetching}
-            />
+            <div>
+              <Label>Empleado</Label>
+              <SelectMenu
+                placeholder="Selecciona un empleado..."
+                options={employees.map((e) => ({ value: String(e.id), label: e.name }))}
+                value={effectiveEmployeeId}
+                onChange={handleEmployeeChange}
+                disabled={tsFetching}
+              />
+            </div>
           )}
         </DialogBody>
         <DialogFooter>

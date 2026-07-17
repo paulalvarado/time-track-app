@@ -12,6 +12,7 @@ type SelectMenuProps = {
   onChange: (value: string) => void;
   placeholder?: string;
   wrapperClassName?: string;
+  disabled?: boolean;
 };
 
 export function SelectMenu({
@@ -20,6 +21,7 @@ export function SelectMenu({
   onChange,
   placeholder = "Select...",
   wrapperClassName = "",
+  disabled = false,
 }: SelectMenuProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -40,8 +42,8 @@ export function SelectMenu({
     <div ref={ref} className={`relative ${wrapperClassName}`}>
       <button
         type="button"
-        onClick={() => setOpen(!open)}
-        className={`flex h-10 w-full items-center justify-between rounded-[6px] border bg-card px-3 text-[14px] leading-[20px] outline-none transition-all duration-150 cursor-pointer ${
+        onClick={() => !disabled && setOpen(!open)}
+        className={`flex h-10 w-full items-center justify-between rounded-[6px] border bg-card px-3 text-[14px] leading-[20px] outline-none transition-all duration-150 ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"} ${
           open
             ? "border-[#171717] ring-[3px] ring-text-primary/10"
             : "border-border hover:border-[#a1a1a1]"
@@ -71,9 +73,12 @@ export function SelectMenu({
                   <button
                     key={opt.value}
                     type="button"
+                    disabled={disabled}
                     onClick={() => {
-                      onChange(opt.value);
-                      setOpen(false);
+                      if (!disabled) {
+                        onChange(opt.value);
+                        setOpen(false);
+                      }
                     }}
                     className={`flex w-full items-center gap-2.5 rounded-[4px] px-2.5 py-2 text-[14px] leading-[20px] transition-colors ${
                       isSelected
