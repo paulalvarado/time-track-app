@@ -127,7 +127,7 @@ function AdminSettingsOdooPage() {
 
             <div>
               <Label>Usuario</Label>
-              <Input type="email" value={userEmail} wrapperClassName="max-w-full" disabled />
+              <Input type="email" value={userEmail} onChange={(e) => setUserEmail(e.target.value)} wrapperClassName="max-w-full" required />
               <p className="mt-1.5 text-[12px] leading-[16px] text-text-muted">Tu correo electrónico registrado en Odoo.</p>
             </div>
 
