@@ -1,7 +1,8 @@
-import { createRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createRoute, useNavigate, Link, useLocation } from "@tanstack/react-router";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useSetBreadcrumb } from "../components/breadcrumb-context";
 import { Button, Dropdown, DropdownItem, DropdownDivider, Dialog, DialogHeader, DialogBody, DialogFooter, useDialog, ScrollArea, SelectMenu, Label, Input, Textarea } from "../components/ui";
-import { Breadcrumb } from "../components/breadcrumb";
+import { PageHeader } from "../components/page-header";
 import { useCatalog, type CatalogItem } from "../lib/use-catalog";
 import { useDarkMode } from "../lib/use-dark-mode";
 import { Route as authLayout } from "../layouts/auth-layout";
@@ -53,7 +54,7 @@ function LogoSvg() {
   );
 }
 
-function ProjectTasksPage() {
+export function ProjectTasksPage() {
   const navigate = useNavigate();
   const [projectId, setProjectId] = useState("");
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
@@ -347,11 +348,34 @@ function ProjectTasksPage() {
     else tasksByStage.get(-1)!.push(t);
   });
 
-  if (loading) {
-    return (
-      <main className="min-h-screen bg-page">
+  const isAdminPath = useLocation().pathname.startsWith("/admin");
+  useSetBreadcrumb(isAdminPath 
+    ? [
+        { label: "Proyectos", to: "/projects" },
+        { label: projectName || (projectId ? `Proyecto #${projectId}` : "Cargando...") },
+      ]
+    : null);
 
-        <div className="mx-auto max-w-[1200px] px-6 py-20 flex items-center justify-center">
+  return (
+    <main className="min-h-screen max-h-screen overflow-hidden bg-page">
+
+
+      <div className="mx-auto max-w-[1200px] px-6 py-4 min-w-0">
+        <PageHeader
+          title={projectName}
+          description={`${tasks.length} tarea${tasks.length === 1 ? "" : "s"}`}
+          {...(isAdminPath ? {} : {
+            breadcrumbs: [
+              { label: "Proyectos", to: "/projects" },
+              { label: projectName },
+            ]
+          })}
+        />
+      </div>
+
+      {/* Kanban Board */}
+      {loading ? (
+        <div className="mx-auto max-w-[1200px] px-6 flex items-center justify-center py-20">
           <div className="flex items-center gap-2 text-[14px] text-text-muted">
             <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -360,26 +384,10 @@ function ProjectTasksPage() {
             Cargando...
           </div>
         </div>
-      </main>
-    );
-  }
-
-  return (
-    <main className="min-h-screen max-h-screen overflow-hidden bg-page">
-
-
-      <Breadcrumb items={[{ label: "Proyectos", to: "/projects" }, { label: projectName }]} />
-      <div className="mx-auto max-w-[1200px] px-6 py-4 min-w-0">
-        <h1 className="text-[20px] sm:text-[24px] font-semibold leading-[28px] sm:leading-[32px] tracking-[-0.8px] sm:tracking-[-0.96px] text-text-primary mt-1 truncate">
-          {projectName}
-        </h1>
-        <p className="mt-0.5 text-[14px] leading-[20px] text-text-secondary">{tasks.length} tarea{tasks.length === 1 ? "" : "s"}</p>
-      </div>
-
-      {/* Kanban Board */}
-      <div className="mx-auto max-w-[1200px] px-6 pb-8" style={{ height: "calc(100vh - 180px)" }}>
-        <ScrollArea style={{ width: "100%", height: "100%" }} options={{ scrollbars: { autoHide: "never" } }}>
-          <div className="flex gap-4 min-w-max h-full">
+      ) : (
+        <div className="mx-auto max-w-[1200px] px-6 pb-8" style={{ height: "calc(100vh - 180px)" }}>
+          <ScrollArea style={{ width: "100%", height: "100%" }} options={{ scrollbars: { autoHide: "never" } }}>
+            <div className="flex gap-4 min-w-max h-full">
           {stages.length === 0 && tasks.length === 0 ? (
             <div className="w-full rounded-[12px] border border-border bg-card p-12 text-center">
               {fetchError ? (
@@ -434,7 +442,7 @@ function ProjectTasksPage() {
                       return (
                         <Link
                           key={task.id}
-                          to="/projects/$projectId/tasks/$taskId"
+                          to={window.location.pathname.startsWith("/admin") ? "/admin/projects/$projectId/tasks/$taskId" : "/projects/$projectId/tasks/$taskId"}
                           params={{ projectId, taskId: String(task.id) }}
                           className="rounded-[8px] border border-border bg-card shadow-[0px_1px_1px_#00000003,0px_2px_4px_-2px_#00000005] hover:border-border-hover transition-colors cursor-pointer no-underline block mb-3"
                         >
@@ -472,6 +480,7 @@ function ProjectTasksPage() {
         </div>
         </ScrollArea>
       </div>
+      )}
 
       {/* FAB - Add Task */}
       <button

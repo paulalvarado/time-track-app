@@ -1,9 +1,9 @@
 import { createRoute } from "@tanstack/react-router";
 import { Route as adminLayout } from "../../layouts/admin-layout";
-import { AdminProjectsPage } from "../../features/admin/pages/admin-projects-page";
+import { ProjectTasksPage } from "../project-tasks";
 
 export const Route = createRoute({
   getParentRoute: () => adminLayout,
-  path: "/admin/projects",
-  component: AdminProjectsPage,
+  path: "/admin/projects/$projectId",
+  component: ProjectTasksPage,
 });

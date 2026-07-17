@@ -49,7 +49,7 @@ export function SelectMenu({
             : "border-border hover:border-[#a1a1a1]"
         }`}
       >
-        <span className={selected ? "text-text-primary" : "text-text-muted"}>
+        <span className={`text-left flex-1 min-w-0 truncate ${selected ? "text-text-primary" : "text-text-muted"}`}>
           {selected ? selected.label : placeholder}
         </span>
         <svg
@@ -80,7 +80,7 @@ export function SelectMenu({
                         setOpen(false);
                       }
                     }}
-                    className={`flex w-full items-center gap-2.5 rounded-[4px] px-2.5 py-2 text-[14px] leading-[20px] transition-colors ${
+                    className={`flex w-full items-center gap-2.5 rounded-[4px] px-2.5 py-2 text-[14px] leading-[20px] text-left transition-colors ${
                       isSelected
                         ? "text-text-primary bg-surface"
                         : "text-text-primary hover:bg-page"

@@ -33,7 +33,10 @@ import { Route as settingsAiRoute } from "./routes/settings-ai";
 import { Route as adminRoute } from "./routes/admin";
 import { Route as adminDashboardRoute } from "./routes/admin/dashboard";
 import { Route as adminProjectsRoute } from "./routes/admin/projects";
+import { Route as adminProjectTasksRoute } from "./routes/admin/project-tasks";
+import { Route as adminTaskDetailRoute, TimesheetRoute as adminTaskDetailTimesheetRoute } from "./routes/admin/task-detail";
 import { Route as adminHoursRoute } from "./routes/admin/hours";
+import { Route as adminHoursReportRoute } from "./routes/admin/hours-report";
 import { Route as adminUsersRoute } from "./routes/admin-users";
 import { Route as adminRolesRoute } from "./routes/admin-roles";
 import { Route as adminSettingsLayoutRoute } from "./routes/admin/settings-layout";
@@ -74,7 +77,13 @@ const routeTree = rootRoute.addChildren([
   adminLayout.addChildren([
     adminRoute,
     adminDashboardRoute,
-    adminProjectsRoute,    adminHoursRoute,    adminUsersRoute,
+    adminProjectsRoute,
+    adminProjectTasksRoute,
+    adminTaskDetailRoute,
+    adminTaskDetailTimesheetRoute,
+    adminHoursRoute,
+    adminHoursReportRoute,
+    adminUsersRoute,
     adminRolesRoute,
     adminSettingsLayoutRoute.addChildren([
       adminSettingsRoute,

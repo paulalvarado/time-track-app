@@ -166,9 +166,9 @@ export function DatePicker({ value, onChange, placeholder = "Select date...", wr
                   type="button"
                   onClick={() => selectDay(day)}
                   className={`flex h-8 w-full items-center justify-center rounded-[4px] text-[13px] leading-[18px] transition-all duration-100 cursor-pointer ${
-                    selected
+                    today
                       ? "bg-[#171717] text-[#ffffff] font-medium"
-                      : today
+                      : selected
                         ? "text-text-primary font-medium border border-border"
                         : "text-text-secondary hover:bg-page hover:text-text-primary"
                   }`}

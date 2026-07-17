@@ -16,3 +16,4 @@ export { Label } from "./label";
 export { Tooltip } from "./tooltip";
 export { ThemeToggle } from "./theme-toggle";
 export { PasswordRequirements } from "./password-requirements";
+export { RadioGroup } from "./radio-group";

@@ -1,7 +1,8 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useLocation } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
 import { Button, Card, Dialog, DialogHeader, DialogBody, DialogFooter, useDialog, SelectMenu, Label } from "../../../components/ui";
 import { useDarkMode } from "../../../hooks/use-dark-mode";
+import { useSetBreadcrumb } from "../../../components/breadcrumb-context";
 
 function StatLoader({ loaded, value }: { loaded: boolean; value: string }) {
   const [phase, setPhase] = useState<"bouncing" | "collapsing" | "value">("bouncing");
@@ -54,6 +55,10 @@ function StatLoader({ loaded, value }: { loaded: boolean; value: string }) {
 export function DashboardPage() {
   const navigate = useNavigate();
   const [user, setUser] = useState<{ name: string; email: string; isAdmin?: boolean } | null>(null);
+
+  // Clear breadcrumb on admin dashboard
+  const isAdminPath = useLocation().pathname.startsWith("/admin");
+  useSetBreadcrumb(isAdminPath ? [] : null);
   const [showWelcome, setShowWelcome] = useState(false);
   const confirmLogout = useDialog();
   const { isDark, toggle: toggleDark } = useDarkMode();
@@ -361,7 +366,7 @@ export function DashboardPage() {
                     </div>
                   </Card>
                 </Link>
-                <Link to="/projects" className="block no-underline group">
+                <Link to="/admin/projects" className="block no-underline group">
                   <Card variant="soft">
                     <div className="flex items-center gap-4">
                       <div className="flex h-10 w-10 items-center justify-center rounded-[6px] bg-card border border-border group-hover:border-accent/20 transition-colors">

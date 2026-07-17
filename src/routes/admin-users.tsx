@@ -1,7 +1,8 @@
 import { createRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { Button, Input, Label, Dialog, DialogHeader, DialogBody, DialogFooter, useDialog, Badge } from "../components/ui";
-import { Breadcrumb } from "../components/breadcrumb";
+import { PageHeader } from "../components/page-header";
+import { useSetBreadcrumb } from "../components/breadcrumb-context";
 import { Route as adminLayout } from "../layouts/admin-layout";
 
 export const Route = createRoute({
@@ -29,6 +30,8 @@ type Role = {
 function AdminUsersPage() {
   const navigate = useNavigate();
   const [user, setUser] = useState<{ name: string; email: string; isAdmin?: boolean } | null>(null);
+
+  useSetBreadcrumb([{ label: "Usuarios" }]);
 
   // Users state
   const [users, setUsers] = useState<User[]>([]);
@@ -112,17 +115,11 @@ function AdminUsersPage() {
 
   return (
     <main className="min-h-screen bg-page">
-      <Breadcrumb items={[{ label: "Usuarios" }]} />
-
       <div className="mx-auto max-w-[1200px] px-6 py-8 space-y-8">
-        <div>
-          <h1 className="text-[24px] font-semibold leading-[32px] tracking-[-0.96px] text-text-primary">
-            Usuarios.
-          </h1>
-          <p className="mt-1 text-[14px] leading-[20px] text-text-secondary">
-            Gestiona los usuarios del sistema y sus roles asignados.
-          </p>
-        </div>
+        <PageHeader
+          title="Usuarios."
+          description="Gestiona los usuarios del sistema y sus roles asignados."
+        />
 
         {/* Users list */}
         <div className="space-y-4">

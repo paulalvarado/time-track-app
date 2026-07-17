@@ -17,6 +17,8 @@ function SettingsOdooPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [checking, setChecking] = useState(true);
   const [hasConfig, setHasConfig] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
@@ -81,6 +83,27 @@ function SettingsOdooPage() {
       setError("Error de conexión. Intenta de nuevo.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSync = async () => {
+    setError("");
+    setSuccess("");
+    setSyncResult(null);
+    setSyncing(true);
+    try {
+      const res = await fetch("/api/odoo/sync", { method: "POST" });
+      const data = await res.json();
+      if (data.synced) {
+        setSyncResult({ ok: true, message: "Sincronización completada correctamente." });
+      } else {
+        const errMsg = data.syncErrors?.join(" | ") || "Error durante la sincronización";
+        setSyncResult({ ok: false, message: errMsg });
+      }
+    } catch {
+      setSyncResult({ ok: false, message: "Error de conexión. Intenta de nuevo." });
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -197,10 +220,25 @@ function SettingsOdooPage() {
               <div className="rounded-[6px] bg-info-bg border border-accent/20 px-3 py-2 text-[13px] leading-[18px] bg-info-text">{success}</div>
             )}
 
+            {syncResult && (
+              <div className={`rounded-[6px] border px-3 py-2 text-[13px] leading-[18px] ${
+                syncResult.ok
+                  ? "bg-info-bg border-accent/20 bg-info-text"
+                  : "bg-danger-bg border-danger/20 text-danger-text"
+              }`}>
+                {syncResult.message}
+              </div>
+            )}
+
             <div className="flex items-center gap-2 pt-2">
               <Button type="submit" size="md" disabled={loading}>
                 {loading ? "Guardando..." : hasConfig ? "Actualizar Odoo" : "Conectar Odoo"}
               </Button>
+              {hasConfig && (
+                <Button type="button" size="md" variant="secondary" disabled={syncing} onClick={handleSync}>
+                  {syncing ? "Sincronizando..." : "Sincronizar datos"}
+                </Button>
+              )}
             </div>
           </form>
         </div>

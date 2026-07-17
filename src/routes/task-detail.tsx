@@ -2,6 +2,7 @@ import { createRoute, useNavigate, Link, useLocation } from "@tanstack/react-rou
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Button, Dropdown, DropdownItem, DropdownDivider, Dialog, DialogHeader, DialogBody, DialogFooter, useDialog, Input, Label, DatePicker, NumberInput, SelectMenu, Textarea, Tooltip } from "../components/ui";
 import { Breadcrumb } from "../components/breadcrumb";
+import { useSetBreadcrumb } from "../components/breadcrumb-context";
 import { useCatalog, type CatalogItem } from "../lib/use-catalog";
 import { useDarkMode } from "../lib/use-dark-mode";
 import { Route as authLayout } from "../layouts/auth-layout";
@@ -43,7 +44,7 @@ function LogoSvg() {
   );
 }
 
-function TaskDetailPage() {
+export function TaskDetailPage() {
   const navigate = useNavigate();
   const [projectId, setProjectId] = useState("");
   const [taskId, setTaskId] = useState("");
@@ -375,36 +376,40 @@ function TaskDetailPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <main className="min-h-screen bg-page">
-
-        <div className="mx-auto max-w-[1200px] px-6 py-20 flex items-center justify-center">
-          <div className="flex items-center gap-2 text-[14px] text-text-muted">
-            <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
-            Cargando...
-          </div>
-        </div>
-      </main>
-    );
-  }
+  const isAdminPath = useLocation().pathname.startsWith("/admin");
+  const breadcrumbItems = [
+    { label: "Proyectos", to: "/projects" },
+    { label: projectName || (projectId ? `Proyecto #${projectId}` : "Cargando..."), to: "/projects/$projectId", params: { projectId } },
+    ...(activeTab === "timesheet"
+      ? [
+          { label: task?.name || (taskId ? `Tarea #${taskId}` : "Cargando..."), to: "/projects/$projectId/tasks/$taskId", params: { projectId, taskId } },
+          { label: "Parte de horas" },
+        ]
+      : [{ label: task?.name || (taskId ? `Tarea #${taskId}` : "Cargando...") }]
+    ),
+  ] as any;
+  useSetBreadcrumb(isAdminPath ? (breadcrumbItems as any) : null);
 
   return (
     <main className="min-h-screen bg-page">
 
-
-      <Breadcrumb items={[
-        { label: "Proyectos", to: "/projects" },
-        { label: projectName, to: "/projects/$projectId", params: { projectId } },
-        { label: task?.name || `#${taskId}` },
-      ]} />
-
-      {/* Task detail */}
-      <div className="mx-auto max-w-[1200px] px-6 pb-8">
-        {!task ? (
+      <div className="mx-auto max-w-[1200px] px-6 py-8">
+        {!isAdminPath && (
+          <div className="py-3">
+            <Breadcrumb items={breadcrumbItems as any} />
+          </div>
+        )}
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="flex items-center gap-2 text-[14px] text-text-muted">
+              <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              Cargando...
+            </div>
+          </div>
+        ) : !task ? (
           <div className="rounded-[12px] border border-border bg-card p-12 text-center">
             <p className="text-[14px] leading-[20px] text-text-muted">Tarea no encontrada.</p>
           </div>
@@ -457,11 +462,11 @@ function TaskDetailPage() {
 
               {/* Tabs */}
               <div className="flex items-center gap-1 rounded-[8px] bg-surface p-1 mb-6">
-                <button type="button" onClick={() => navigate({ to: `/projects/${projectId}/tasks/${taskId}` })}
+                <button type="button" onClick={() => navigate({ to: `${window.location.pathname.startsWith("/admin") ? "/admin/projects" : "/projects"}/${projectId}/tasks/${taskId}` })}
                   className={`px-3 py-1.5 text-[13px] font-medium leading-[18px] rounded-[6px] transition-all duration-150 cursor-pointer ${activeTab === "description" ? "bg-card text-text-primary shadow-[0px_1px_1px_#00000008,0_0_0_1px_#0000000a_inset]" : "text-text-muted hover:text-text-secondary"}`}>
                   Descripción
                 </button>
-                <button type="button" onClick={() => navigate({ to: `/projects/${projectId}/tasks/${taskId}/timesheet` })}
+                <button type="button" onClick={() => navigate({ to: `${window.location.pathname.startsWith("/admin") ? "/admin/projects" : "/projects"}/${projectId}/tasks/${taskId}/timesheet` })}
                   className={`px-3 py-1.5 text-[13px] font-medium leading-[18px] rounded-[6px] transition-all duration-150 cursor-pointer ${activeTab === "timesheet" ? "bg-card text-text-primary shadow-[0px_1px_1px_#00000008,0_0_0_1px_#0000000a_inset]" : "text-text-muted hover:text-text-secondary"}`}>
                   Timesheet
                   {timesheets.length > 0 && (
@@ -545,7 +550,7 @@ function TaskDetailPage() {
 
               {/* Back button */}
               <div className="mt-8 pt-6 border-t border-border">
-                <Link to="/projects/$projectId" params={{ projectId }}>
+                <Link to={window.location.pathname.startsWith("/admin") ? "/admin/projects/$projectId" : "/projects/$projectId"} params={{ projectId }}>
                   <Button variant="secondary" size="md">← Volver al Kanban</Button>
                 </Link>
               </div>

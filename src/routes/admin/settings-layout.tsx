@@ -1,5 +1,6 @@
 import { createRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
-import { Breadcrumb } from "../../components/breadcrumb";
+import { PageHeader } from "../../components/page-header";
+import { useSetBreadcrumb } from "../../components/breadcrumb-context";
 import { Route as adminLayout } from "../../layouts/admin-layout";
 
 const sections = [
@@ -18,20 +19,17 @@ function AdminSettingsLayout() {
   const location = useLocation();
   const isIndex = location.pathname === "/admin/settings";
 
+  useSetBreadcrumb([{ label: "Configuración" }]);
+
   return (
     <main className="min-h-screen bg-page">
       {isIndex ? (
         <>
-          <Breadcrumb items={[{ label: "Configuración" }]} />
           <div className="mx-auto max-w-[1200px] px-6 py-8 space-y-8">
-            <div>
-              <h1 className="text-[24px] font-semibold leading-[32px] tracking-[-0.96px] text-text-primary">
-                Configuración.
-              </h1>
-              <p className="mt-1 text-[14px] leading-[20px] text-text-secondary">
-                Administra tu perfil, conexiones y proveedores de IA.
-              </p>
-            </div>
+            <PageHeader
+              title="Configuración."
+              description="Administra tu perfil, conexiones y proveedores de IA."
+            />
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {sections.map((s) => (
                 <Link key={s.key} to={`/admin/settings/${s.key}`} className="block no-underline group h-full">
